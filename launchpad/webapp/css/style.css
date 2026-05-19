@@ -1,0 +1,63 @@
+/* AI Factory Launchpad Styles */
+
+/* Page background */
+.sapMPage {
+    background-color: #f5f6f7;
+}
+
+/* Header styling */
+.sapMPageHeader .sapMBar {
+    background-color: #354a5f;
+}
+
+.sapMPageHeader .sapMTitle {
+    color: white;
+}
+
+.sapMPageHeader .sapMText {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Tile styling */
+.sapMGenericTile {
+    margin: 0.5rem;
+}
+
+/* Panel styling */
+.sapMPanel {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sapMPanelHdr {
+    font-weight: 600;
+    color: #32363a;
+}
+
+/* Footer styling */
+.sapMPageFooter .sapMBar {
+    background-color: #354a5f;
+}
+
+.sapMPageFooter .sapMText {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.75rem;
+}
+
+/* Status indicators */
+.sapMObjStatusSuccess {
+    color: #107e3e;
+}
+
+.sapMObjStatusError {
+    color: #bb0000;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .sapMGenericTile {
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+}

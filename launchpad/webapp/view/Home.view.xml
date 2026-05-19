@@ -1,0 +1,171 @@
+<mvc:View
+    controllerName="ai.factory.launchpad.controller.Home"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:l="sap.ui.layout"
+    xmlns:core="sap.ui.core"
+    height="100%">
+    
+    <Page
+        id="homePage"
+        title="AI Factory"
+        showNavButton="false"
+        backgroundDesign="Solid">
+        
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Image src="sap-icon://machine" width="2rem" class="sapUiSmallMarginEnd"/>
+                    <Title text="AI Factory" level="H3"/>
+                </contentLeft>
+                <contentRight>
+                    <Text text="Platform for AI Agents" class="sapUiSmallMarginEnd"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        
+        <content>
+            <VBox class="sapUiMediumMargin">
+                <!-- Welcome Section -->
+                <Panel headerText="Welcome to AI Factory" class="sapUiMediumMarginBottom">
+                    <VBox class="sapUiSmallMargin">
+                        <Text text="Create, manage, and deploy AI agents with ease. Select an application below to get started."/>
+                    </VBox>
+                </Panel>
+                
+                <!-- Tiles Section -->
+                <Panel headerText="Applications">
+                    <l:HorizontalLayout class="sapUiSmallMargin" allowWrapping="true">
+                        
+                        <!-- Agent Designer Tile -->
+                        <GenericTile
+                            id="agentDesignerTile"
+                            header="Agent Designer"
+                            subheader="Create &amp; Manage Agents"
+                            press="onTilePress"
+                            class="sapUiSmallMarginEnd sapUiSmallMarginBottom"
+                            state="Loaded"
+                            frameType="OneByOne">
+                            <tileContent>
+                                <TileContent>
+                                    <content>
+                                        <ImageContent src="sap-icon://create"/>
+                                    </content>
+                                </TileContent>
+                            </tileContent>
+                            <customData>
+                                <core:CustomData key="target" value="agent-designer"/>
+                            </customData>
+                        </GenericTile>
+                        
+                        <!-- AI Chat Tile -->
+                        <GenericTile
+                            id="customUiTile"
+                            header="AI Chat"
+                            subheader="Chat with Agents"
+                            press="onTilePress"
+                            class="sapUiSmallMarginEnd sapUiSmallMarginBottom"
+                            state="Loaded"
+                            frameType="OneByOne">
+                            <tileContent>
+                                <TileContent footer="Coming Week 2">
+                                    <content>
+                                        <ImageContent src="sap-icon://discussion"/>
+                                    </content>
+                                </TileContent>
+                            </tileContent>
+                            <customData>
+                                <core:CustomData key="target" value="custom-ui"/>
+                            </customData>
+                        </GenericTile>
+                        
+                        <!-- MCP Builder Tile -->
+                        <GenericTile
+                            id="mcpBuilderTile"
+                            header="MCP Builder"
+                            subheader="Build &amp; Test Tools"
+                            press="onTilePress"
+                            class="sapUiSmallMarginEnd sapUiSmallMarginBottom"
+                            state="Loaded"
+                            frameType="OneByOne">
+                            <tileContent>
+                                <TileContent footer="Coming Week 2">
+                                    <content>
+                                        <ImageContent src="sap-icon://wrench"/>
+                                    </content>
+                                </TileContent>
+                            </tileContent>
+                            <customData>
+                                <core:CustomData key="target" value="mcp-builder"/>
+                            </customData>
+                        </GenericTile>
+                        
+                        <!-- Dashboard Tile -->
+                        <GenericTile
+                            id="dashboardTile"
+                            header="Dashboard"
+                            subheader="Monitor Metrics"
+                            press="onTilePress"
+                            class="sapUiSmallMarginEnd sapUiSmallMarginBottom"
+                            state="Loaded"
+                            frameType="OneByOne">
+                            <tileContent>
+                                <TileContent footer="Coming Later">
+                                    <content>
+                                        <ImageContent src="sap-icon://business-objects-experience"/>
+                                    </content>
+                                </TileContent>
+                            </tileContent>
+                            <customData>
+                                <core:CustomData key="target" value="dashboard"/>
+                            </customData>
+                        </GenericTile>
+                        
+                    </l:HorizontalLayout>
+                </Panel>
+                
+                <!-- Quick Links Section -->
+                <Panel headerText="Quick Links" class="sapUiMediumMarginTop">
+                    <HBox class="sapUiSmallMargin" wrap="Wrap">
+                        <Button
+                            text="API Documentation"
+                            icon="sap-icon://document"
+                            type="Transparent"
+                            press="onQuickLinkPress"
+                            class="sapUiSmallMarginEnd"/>
+                        <Button
+                            text="GitHub Repository"
+                            icon="sap-icon://source-code"
+                            type="Transparent"
+                            press="onQuickLinkPress"
+                            class="sapUiSmallMarginEnd"/>
+                        <Button
+                            text="Agent Registry API"
+                            icon="sap-icon://connected"
+                            type="Transparent"
+                            press="onApiHealthCheck"/>
+                    </HBox>
+                </Panel>
+                
+                <!-- Status Section -->
+                <Panel headerText="System Status" class="sapUiMediumMarginTop">
+                    <HBox class="sapUiSmallMargin" alignItems="Center">
+                        <core:Icon src="sap-icon://status-positive" color="#107e3e" class="sapUiSmallMarginEnd"/>
+                        <Text text="Agent Registry API: " class="sapUiSmallMarginEnd"/>
+                        <ObjectStatus id="apiStatus" text="Checking..." state="None"/>
+                    </HBox>
+                </Panel>
+                
+            </VBox>
+        </content>
+        
+        <footer>
+            <Bar>
+                <contentMiddle>
+                    <Text text="AI Factory v1.0.0 | Week 1 Complete"/>
+                </contentMiddle>
+            </Bar>
+        </footer>
+        
+    </Page>
+</mvc:View>

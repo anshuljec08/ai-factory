@@ -1,0 +1,56 @@
+{
+  "_version": "1.32.0",
+  "sap.app": {
+    "id": "ai.factory.launchpad",
+    "type": "application",
+    "title": "AI Factory",
+    "description": "AI Factory - Platform for creating and managing AI agents",
+    "applicationVersion": {
+      "version": "1.0.0"
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "sap-icon://machine"
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "ai.factory.launchpad.view.Home",
+      "type": "XML",
+      "async": true,
+      "id": "homeView"
+    },
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "tiles": {
+        "type": "sap.ui.model.json.JSONModel",
+        "uri": "model/tiles.json"
+      }
+    },
+    "resources": {
+      "css": [
+        {
+          "uri": "css/style.css"
+        }
+      ]
+    }
+  }
+}
