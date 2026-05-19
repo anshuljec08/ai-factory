@@ -1,0 +1,23 @@
+{
+  "name": "@ai-factory/agent-schema",
+  "version": "1.0.0",
+  "description": "JSON schemas and validation utilities for AI Factory agents and tools",
+  "main": "validator.js",
+  "scripts": {
+    "test": "node test.js",
+    "validate:samples": "node -e \"const v = require('./validator'); const fs = require('fs'); ['production-agent', 'sales-agent'].forEach(f => { const a = JSON.parse(fs.readFileSync('./samples/' + f + '.json')); const r = v.validateAgentConfig(a); console.log(f + ':', r.valid ? 'VALID' : 'INVALID', r.errors || ''); });\""
+  },
+  "keywords": [
+    "ai-factory",
+    "schema",
+    "validation",
+    "agents",
+    "tools"
+  ],
+  "author": "AI Factory Team",
+  "license": "MIT",
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1"
+  }
+}

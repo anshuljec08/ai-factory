@@ -1,0 +1,384 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-factory.sap.com/schemas/tool.schema.json",
+  "title": "AI Factory Tool Schema",
+  "description": "Schema for defining tools in the AI Factory platform",
+  "type": "object",
+  "required": ["id", "name", "type"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Unique tool identifier"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Human-readable tool name"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Detailed description of what the tool does"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["mcp", "rag", "graphrag", "memory", "api", "database", "code", "file", "web", "browser", "agent", "guardrails", "custom"],
+      "description": "Tool type category"
+    },
+    "inputSchema": {
+      "type": "object",
+      "description": "JSON Schema for tool input parameters",
+      "properties": {
+        "type": { "type": "string" },
+        "properties": { "type": "object" },
+        "required": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "description": "JSON Schema for tool output"
+    },
+    "config": {
+      "oneOf": [
+        { "$ref": "#/definitions/mcpConfig" },
+        { "$ref": "#/definitions/ragConfig" },
+        { "$ref": "#/definitions/apiConfig" },
+        { "$ref": "#/definitions/databaseConfig" },
+        { "$ref": "#/definitions/codeConfig" },
+        { "$ref": "#/definitions/webConfig" },
+        { "$ref": "#/definitions/agentConfig" },
+        { "$ref": "#/definitions/customConfig" }
+      ],
+      "description": "Type-specific configuration"
+    },
+    "authentication": {
+      "type": "object",
+      "description": "Authentication configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["none", "basic", "bearer", "oauth2", "api-key", "xsuaa"],
+          "default": "none"
+        },
+        "credentials": {
+          "type": "object",
+          "description": "Credential reference (not actual secrets)"
+        }
+      }
+    },
+    "rateLimit": {
+      "type": "object",
+      "description": "Rate limiting configuration",
+      "properties": {
+        "requestsPerMinute": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 60
+        },
+        "requestsPerDay": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10000
+        }
+      }
+    },
+    "retry": {
+      "type": "object",
+      "description": "Retry configuration",
+      "properties": {
+        "maxRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
+        "backoffMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 60000,
+          "default": 1000
+        },
+        "backoffMultiplier": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "default": 2
+        }
+      }
+    },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 300000,
+      "default": 30000,
+      "description": "Tool execution timeout in milliseconds"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the tool is enabled"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "category": { "type": "string" },
+        "icon": { "type": "string" }
+      }
+    }
+  },
+  "definitions": {
+    "mcpConfig": {
+      "type": "object",
+      "description": "MCP Server configuration",
+      "properties": {
+        "serverUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "MCP server URL"
+        },
+        "serverName": {
+          "type": "string",
+          "description": "MCP server name"
+        },
+        "tools": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific tools to use from the server"
+        },
+        "transport": {
+          "type": "string",
+          "enum": ["http", "stdio", "websocket"],
+          "default": "http"
+        }
+      },
+      "required": ["serverUrl"]
+    },
+    "ragConfig": {
+      "type": "object",
+      "description": "RAG (Retrieval Augmented Generation) configuration",
+      "properties": {
+        "vectorStore": {
+          "type": "string",
+          "enum": ["hana-vector", "pinecone", "weaviate", "chroma", "qdrant", "milvus"],
+          "description": "Vector store provider"
+        },
+        "connectionString": {
+          "type": "string",
+          "description": "Connection string reference"
+        },
+        "embeddingModel": {
+          "type": "string",
+          "default": "text-embedding-3-small",
+          "description": "Embedding model to use"
+        },
+        "chunkSize": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000,
+          "default": 1000
+        },
+        "chunkOverlap": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 200
+        },
+        "topK": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 5,
+          "description": "Number of results to retrieve"
+        },
+        "scoreThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.7,
+          "description": "Minimum similarity score"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Vector store namespace/collection"
+        }
+      },
+      "required": ["vectorStore"]
+    },
+    "apiConfig": {
+      "type": "object",
+      "description": "REST API configuration",
+      "properties": {
+        "baseUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "API base URL"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "API endpoint path"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+          "default": "GET"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Request headers"
+        },
+        "queryParams": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Query parameters"
+        },
+        "bodyTemplate": {
+          "type": "string",
+          "description": "Request body template (supports {{variable}} syntax)"
+        },
+        "responseMapping": {
+          "type": "object",
+          "description": "Map response fields to output"
+        }
+      },
+      "required": ["baseUrl"]
+    },
+    "databaseConfig": {
+      "type": "object",
+      "description": "Database configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["hana", "postgresql", "mysql", "sqlite", "mongodb"],
+          "description": "Database type"
+        },
+        "connectionString": {
+          "type": "string",
+          "description": "Connection string reference"
+        },
+        "schema": {
+          "type": "string",
+          "description": "Database schema"
+        },
+        "allowedOperations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["SELECT", "INSERT", "UPDATE", "DELETE"]
+          },
+          "default": ["SELECT"],
+          "description": "Allowed SQL operations"
+        },
+        "maxRows": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "default": 100,
+          "description": "Maximum rows to return"
+        }
+      },
+      "required": ["type"]
+    },
+    "codeConfig": {
+      "type": "object",
+      "description": "Code execution configuration",
+      "properties": {
+        "runtime": {
+          "type": "string",
+          "enum": ["javascript", "python", "typescript"],
+          "default": "javascript"
+        },
+        "sandbox": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run in sandboxed environment"
+        },
+        "allowedModules": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Allowed modules/packages"
+        },
+        "maxExecutionTime": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 60000,
+          "default": 10000
+        }
+      }
+    },
+    "webConfig": {
+      "type": "object",
+      "description": "Web scraping/browsing configuration",
+      "properties": {
+        "allowedDomains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Allowed domains to access"
+        },
+        "userAgent": {
+          "type": "string",
+          "description": "User agent string"
+        },
+        "headless": {
+          "type": "boolean",
+          "default": true
+        },
+        "javascript": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable JavaScript execution"
+        }
+      }
+    },
+    "agentConfig": {
+      "type": "object",
+      "description": "Agent-as-tool configuration",
+      "properties": {
+        "agentId": {
+          "type": "string",
+          "description": "ID of the agent to invoke"
+        },
+        "passContext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Pass conversation context to sub-agent"
+        },
+        "maxDepth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "default": 2,
+          "description": "Maximum nesting depth"
+        }
+      },
+      "required": ["agentId"]
+    },
+    "customConfig": {
+      "type": "object",
+      "description": "Custom tool configuration",
+      "properties": {
+        "handler": {
+          "type": "string",
+          "description": "Handler function or module path"
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Custom parameters"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "id": "sales-agent",
+  "name": "Sales Order Assistant",
+  "description": "AI assistant for SAP S/4HANA sales operations. Helps with sales orders, customer inquiries, and order status tracking.",
+  "framework": "mcp",
+  "systemPrompt": "You are a Sales Order Assistant for SAP S/4HANA.\n\nYour role is to help sales representatives and customer service teams with:\n- Creating and managing sales orders\n- Checking order status and delivery information\n- Answering customer inquiries about products and pricing\n- Providing sales analytics and insights\n\nGuidelines:\n- Be professional and customer-focused\n- Provide accurate pricing and availability information\n- Respect customer data privacy\n- Escalate complex issues to human agents when needed\n- Format order information clearly\n\nYou have access to tools for querying sales orders, customers, and product information.",
+  "model": "gpt-4o",
+  "modelConfig": {
+    "temperature": 0.5,
+    "maxTokens": 4096,
+    "topP": 0.95
+  },
+  "tools": [
+    {
+      "name": "get-sales-orders",
+      "type": "api",
+      "description": "Retrieve sales orders from S/4HANA",
+      "enabled": true,
+      "config": {
+        "baseUrl": "https://s4hana.example.com/sap/opu/odata/sap",
+        "endpoint": "/API_SALES_ORDER_SRV/A_SalesOrder",
+        "method": "GET",
+        "headers": {
+          "Accept": "application/json"
+        }
+      }
+    },
+    {
+      "name": "get-customers",
+      "type": "api",
+      "description": "Retrieve customer information",
+      "enabled": true,
+      "config": {
+        "baseUrl": "https://s4hana.example.com/sap/opu/odata/sap",
+        "endpoint": "/API_BUSINESS_PARTNER/A_BusinessPartner",
+        "method": "GET"
+      }
+    },
+    {
+      "name": "product-catalog",
+      "type": "rag",
+      "description": "Search product catalog and specifications",
+      "enabled": true,
+      "config": {
+        "vectorStore": "hana-vector",
+        "embeddingModel": "text-embedding-3-small",
+        "topK": 10,
+        "scoreThreshold": 0.6,
+        "namespace": "product-catalog"
+      }
+    },
+    {
+      "name": "sales-analytics",
+      "type": "database",
+      "description": "Query sales analytics data",
+      "enabled": true,
+      "config": {
+        "type": "hana",
+        "schema": "SALES_ANALYTICS",
+        "allowedOperations": ["SELECT"],
+        "maxRows": 100
+      }
+    }
+  ],
+  "maxSteps": 25,
+  "timeout": 45000,
+  "capabilities": {
+    "streaming": true,
+    "humanInLoop": true,
+    "memory": true,
+    "codeExecution": false,
+    "fileAccess": false,
+    "webBrowsing": false
+  },
+  "memoryConfig": {
+    "provider": "redis",
+    "maxMessages": 100,
+    "summarizeAfter": 30
+  },
+  "guardrails": {
+    "inputFilter": true,
+    "outputFilter": true,
+    "contentPolicy": "moderate",
+    "blockedTopics": ["competitor-pricing", "internal-costs"]
+  },
+  "version": "1.0.0",
+  "status": "active",
+  "metadata": {
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z",
+    "createdBy": "admin",
+    "tags": ["sales", "s4hana", "orders", "customers"],
+    "category": "Sales",
+    "icon": "sap-icon://sales-order"
+  }
+}

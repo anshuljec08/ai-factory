@@ -1,0 +1,259 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-factory.sap.com/schemas/agent.schema.json",
+  "title": "AI Factory Agent Schema",
+  "description": "Schema for defining AI agents in the AI Factory platform",
+  "type": "object",
+  "required": ["id", "name", "framework", "systemPrompt", "model"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Unique agent identifier (lowercase, alphanumeric, hyphens only)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Human-readable agent name"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Brief description of the agent's purpose"
+    },
+    "framework": {
+      "type": "string",
+      "enum": ["mcp", "langgraph", "maf", "crewai"],
+      "description": "AI framework to use for execution"
+    },
+    "systemPrompt": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50000,
+      "description": "System prompt that defines the agent's behavior"
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "description": "LLM model identifier (e.g., claude-4-sonnet, gpt-4o)"
+    },
+    "modelConfig": {
+      "type": "object",
+      "description": "Model-specific configuration",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 0.7,
+          "description": "Sampling temperature"
+        },
+        "maxTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200000,
+          "default": 4096,
+          "description": "Maximum tokens in response"
+        },
+        "topP": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "description": "Top-p sampling parameter"
+        },
+        "stopSequences": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Sequences that stop generation"
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/toolReference" },
+      "description": "Tools available to the agent"
+    },
+    "maxSteps": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 30,
+      "description": "Maximum execution steps (tool calls)"
+    },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 600000,
+      "default": 30000,
+      "description": "Execution timeout in milliseconds"
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "Agent capabilities",
+      "properties": {
+        "streaming": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable streaming responses"
+        },
+        "humanInLoop": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require human approval for certain actions"
+        },
+        "memory": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable conversation memory"
+        },
+        "codeExecution": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow code execution"
+        },
+        "fileAccess": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow file system access"
+        },
+        "webBrowsing": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow web browsing"
+        }
+      }
+    },
+    "memoryConfig": {
+      "type": "object",
+      "description": "Memory configuration (if memory capability enabled)",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["mem0", "redis", "postgresql", "in-memory"],
+          "default": "in-memory"
+        },
+        "maxMessages": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 50
+        },
+        "summarizeAfter": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 100,
+          "default": 20
+        }
+      }
+    },
+    "guardrails": {
+      "type": "object",
+      "description": "Safety guardrails configuration",
+      "properties": {
+        "inputFilter": {
+          "type": "boolean",
+          "default": true,
+          "description": "Filter harmful input"
+        },
+        "outputFilter": {
+          "type": "boolean",
+          "default": true,
+          "description": "Filter harmful output"
+        },
+        "contentPolicy": {
+          "type": "string",
+          "enum": ["strict", "moderate", "permissive"],
+          "default": "moderate"
+        },
+        "blockedTopics": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Topics to block"
+        }
+      }
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0",
+      "description": "Semantic version of the agent"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "inactive", "archived"],
+      "default": "draft",
+      "description": "Agent status"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Creator user ID"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Last updater user ID"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags for categorization"
+        },
+        "category": {
+          "type": "string",
+          "description": "Agent category"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon identifier (e.g., sap-icon://robot)"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "toolReference": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Tool name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["mcp", "rag", "graphrag", "memory", "api", "database", "code", "file", "web", "browser", "agent", "guardrails", "custom"],
+          "description": "Tool type"
+        },
+        "description": {
+          "type": "string",
+          "description": "Tool description"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether tool is enabled"
+        },
+        "config": {
+          "type": "object",
+          "description": "Tool-specific configuration"
+        }
+      }
+    }
+  }
+}

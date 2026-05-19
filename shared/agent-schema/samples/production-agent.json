@@ -1,0 +1,79 @@
+{
+  "id": "production-agent",
+  "name": "Production Operations Assistant",
+  "description": "AI assistant for SAP Digital Manufacturing production operations. Helps with production orders, alerts, and shop floor management.",
+  "framework": "mcp",
+  "systemPrompt": "You are a Production Operations Assistant for SAP Digital Manufacturing.\n\nYour role is to help production managers and operators with:\n- Viewing and managing production orders\n- Analyzing production alerts and issues\n- Monitoring shop floor operations\n- Providing insights on production efficiency\n\nGuidelines:\n- Always be precise with production data\n- Prioritize safety-related alerts\n- Provide actionable recommendations\n- Use clear, concise language\n- When showing data, format it in easy-to-read tables\n\nYou have access to tools for querying production orders, alerts, and shop floor data.",
+  "model": "claude-4-sonnet",
+  "modelConfig": {
+    "temperature": 0.3,
+    "maxTokens": 4096,
+    "topP": 0.9
+  },
+  "tools": [
+    {
+      "name": "get-production-orders",
+      "type": "mcp",
+      "description": "Retrieve production orders with optional filters",
+      "enabled": true,
+      "config": {
+        "serverUrl": "https://mcp-server.cfapps.../dmc",
+        "tools": ["get_production_orders"]
+      }
+    },
+    {
+      "name": "get-alerts",
+      "type": "mcp",
+      "description": "Get production alerts and notifications",
+      "enabled": true,
+      "config": {
+        "serverUrl": "https://mcp-server.cfapps.../dmc",
+        "tools": ["get_alerts"]
+      }
+    },
+    {
+      "name": "production-knowledge",
+      "type": "rag",
+      "description": "Search production documentation and SOPs",
+      "enabled": true,
+      "config": {
+        "vectorStore": "hana-vector",
+        "embeddingModel": "text-embedding-3-small",
+        "topK": 5,
+        "scoreThreshold": 0.7,
+        "namespace": "production-docs"
+      }
+    }
+  ],
+  "maxSteps": 30,
+  "timeout": 60000,
+  "capabilities": {
+    "streaming": true,
+    "humanInLoop": false,
+    "memory": true,
+    "codeExecution": false,
+    "fileAccess": false,
+    "webBrowsing": false
+  },
+  "memoryConfig": {
+    "provider": "in-memory",
+    "maxMessages": 50,
+    "summarizeAfter": 20
+  },
+  "guardrails": {
+    "inputFilter": true,
+    "outputFilter": true,
+    "contentPolicy": "strict",
+    "blockedTopics": ["personal-data", "financial-data"]
+  },
+  "version": "1.0.0",
+  "status": "active",
+  "metadata": {
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z",
+    "createdBy": "admin",
+    "tags": ["production", "manufacturing", "dmc", "sap"],
+    "category": "Operations",
+    "icon": "sap-icon://factory"
+  }
+}
