@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Factory</title>
+    <title>AI Factory - Direct View Test</title>
     
     <script
         id="sap-ui-bootstrap"
@@ -20,31 +20,27 @@
     
     <script>
         sap.ui.getCore().attachInit(function() {
-            // Load the view directly (bypassing Component for simplicity)
+            console.log("UI5 Core initialized - Direct View Test");
+            
             sap.ui.require([
-                "sap/ui/core/mvc/XMLView",
-                "sap/ui/model/json/JSONModel"
-            ], function(XMLView, JSONModel) {
+                "sap/ui/core/mvc/XMLView"
+            ], function(XMLView) {
+                console.log("Loading XMLView directly...");
                 
-                // Create the view
                 XMLView.create({
                     viewName: "ai.factory.launchpad.view.Home"
                 }).then(function(oView) {
-                    // Load tiles model
-                    var oTilesModel = new JSONModel();
-                    oTilesModel.loadData("model/tiles.json");
-                    oView.setModel(oTilesModel, "tiles");
-                    
-                    // Place the view
+                    console.log("View created successfully!");
                     oView.placeAt("content");
+                    console.log("View placed in DOM");
                 }).catch(function(error) {
                     console.error("Error creating view:", error);
+                    document.getElementById("content").innerHTML = 
+                        "<h1 style='color:red'>Error loading view</h1><pre>" + error.message + "</pre>";
                 });
             });
         });
     </script>
-    
-    <link rel="stylesheet" href="css/style.css">
     
     <style>
         html, body {
@@ -58,6 +54,8 @@
     </style>
 </head>
 <body class="sapUiBody">
-    <div id="content"></div>
+    <div id="content">
+        <p>Loading...</p>
+    </div>
 </body>
 </html>
