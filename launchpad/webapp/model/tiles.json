@@ -1,0 +1,48 @@
+{
+  "tiles": [
+    {
+      "id": "agent-designer",
+      "header": "Agent Designer",
+      "subheader": "Create & Manage Agents",
+      "icon": "sap-icon://create",
+      "footer": "Week 1 - Active",
+      "target": "agent-designer",
+      "url": "http://localhost:8080",
+      "enabled": true,
+      "status": "active"
+    },
+    {
+      "id": "custom-ui",
+      "header": "AI Chat",
+      "subheader": "Chat with Agents",
+      "icon": "sap-icon://discussion",
+      "footer": "Coming Week 2",
+      "target": "custom-ui",
+      "url": "http://localhost:8081",
+      "enabled": false,
+      "status": "coming-soon"
+    },
+    {
+      "id": "mcp-builder",
+      "header": "MCP Builder",
+      "subheader": "Build & Test Tools",
+      "icon": "sap-icon://wrench",
+      "footer": "Coming Week 2",
+      "target": "mcp-builder",
+      "url": "http://localhost:8082",
+      "enabled": false,
+      "status": "coming-soon"
+    },
+    {
+      "id": "dashboard",
+      "header": "Dashboard",
+      "subheader": "Monitor Metrics",
+      "icon": "sap-icon://business-objects-experience",
+      "footer": "Coming Later",
+      "target": "dashboard",
+      "url": "http://localhost:8083",
+      "enabled": false,
+      "status": "planned"
+    }
+  ]
+}

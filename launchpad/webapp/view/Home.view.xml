@@ -15,7 +15,7 @@
         <customHeader>
             <Bar>
                 <contentLeft>
-                    <Image src="sap-icon://machine" width="2rem" class="sapUiSmallMarginEnd"/>
+                    <core:Icon src="sap-icon://machine" size="2rem" class="sapUiSmallMarginEnd" color="#fff"/>
                     <Title text="AI Factory" level="H3"/>
                 </contentLeft>
                 <contentRight>
