@@ -1,10 +1,10 @@
 [
   {
     "id": "production-agent",
-    "name": "Production Operations Assistant",
+    "name": "Production Assistant",
     "description": "AI assistant for SAP Digital Manufacturing production operations. Helps with production orders, alerts, and shop floor management.",
-    "framework": "mcp",
-    "systemPrompt": "You are a Production Operations Assistant for SAP Digital Manufacturing.\n\nYour role is to help production managers and operators with:\n- Viewing and managing production orders\n- Analyzing production alerts and issues\n- Monitoring shop floor operations\n- Providing insights on production efficiency\n\nGuidelines:\n- Always be precise with production data\n- Prioritize safety-related alerts\n- Provide actionable recommendations\n- Use clear, concise language\n- When showing data, format it in easy-to-read tables\n\nYou have access to tools for querying production orders, alerts, and shop floor data.",
+    "framework": "default",
+    "systemPrompt": "Test prompt",
     "model": "claude-4-sonnet",
     "modelConfig": {
       "temperature": 0.3,
@@ -41,12 +41,17 @@
       "contentPolicy": "strict"
     },
     "version": "1.0.0",
-    "status": "active",
+    "status": "draft",
     "metadata": {
       "createdAt": "2024-01-15T10:00:00.000Z",
-      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2026-05-19T13:10:35.130Z",
       "createdBy": "admin",
-      "tags": ["production", "manufacturing", "dmc", "sap"],
+      "tags": [
+        "production",
+        "manufacturing",
+        "dmc",
+        "sap"
+      ],
       "category": "Operations",
       "icon": "sap-icon://factory"
     }
@@ -55,7 +60,7 @@
     "id": "sales-agent",
     "name": "Sales Order Assistant",
     "description": "AI assistant for SAP S/4HANA sales operations. Helps with sales orders, customer inquiries, and order status tracking.",
-    "framework": "mcp",
+    "framework": "default",
     "systemPrompt": "You are a Sales Order Assistant for SAP S/4HANA.\n\nYour role is to help sales representatives and customer service teams with:\n- Creating and managing sales orders\n- Checking order status and delivery information\n- Answering customer inquiries about products and pricing\n- Providing sales analytics and insights\n\nGuidelines:\n- Be professional and customer-focused\n- Provide accurate pricing and availability information\n- Respect customer data privacy\n- Escalate complex issues to human agents when needed\n- Format order information clearly\n\nYou have access to tools for querying sales orders, customers, and product information.",
     "model": "gpt-4o",
     "modelConfig": {
@@ -80,7 +85,7 @@
     "maxSteps": 25,
     "timeout": 45000,
     "capabilities": {
-      "streaming": true,
+      "streaming": false,
       "humanInLoop": true,
       "memory": true,
       "codeExecution": false,
@@ -96,9 +101,14 @@
     "status": "active",
     "metadata": {
       "createdAt": "2024-01-15T10:00:00.000Z",
-      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2026-05-19T14:12:46.001Z",
       "createdBy": "admin",
-      "tags": ["sales", "s4hana", "orders", "customers"],
+      "tags": [
+        "sales",
+        "s4hana",
+        "orders",
+        "customers"
+      ],
       "category": "Sales",
       "icon": "sap-icon://sales-order"
     }
@@ -107,7 +117,7 @@
     "id": "general-assistant",
     "name": "General Assistant",
     "description": "A general-purpose AI assistant for answering questions and helping with various tasks.",
-    "framework": "mcp",
+    "framework": "default",
     "systemPrompt": "You are a helpful AI assistant. You can help users with:\n- Answering questions\n- Explaining concepts\n- Providing recommendations\n- General conversation\n\nBe helpful, accurate, and concise in your responses.",
     "model": "claude-4-sonnet",
     "modelConfig": {
@@ -137,7 +147,11 @@
       "createdAt": "2024-01-15T10:00:00.000Z",
       "updatedAt": "2024-01-15T10:00:00.000Z",
       "createdBy": "admin",
-      "tags": ["general", "assistant", "chat"],
+      "tags": [
+        "general",
+        "assistant",
+        "chat"
+      ],
       "category": "General",
       "icon": "sap-icon://discussion"
     }

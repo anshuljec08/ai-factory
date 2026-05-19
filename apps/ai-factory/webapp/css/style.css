@@ -1,0 +1,145 @@
+/* AI Factory Styles */
+
+/* Tool Page customization */
+.sapTntToolPage {
+    background-color: #f5f5f5;
+}
+
+/* Side Navigation */
+.sapTntSideNavigation {
+    background-color: #354a5f;
+}
+
+/* Tile styling */
+.sapMGT {
+    margin: 0.5rem;
+}
+
+/* Home page */
+.sapMPage > section {
+    padding: 1rem;
+}
+
+/* Agent List Table */
+.agentTable {
+    margin-top: 1rem;
+}
+
+/* Form styling */
+.sapUxAPObjectPageSubSection .sapUiForm {
+    padding: 1rem;
+}
+
+/* Status indicators */
+.statusActive {
+    color: #107e3e;
+}
+
+.statusInactive {
+    color: #bb0000;
+}
+
+.statusDraft {
+    color: #e9730c;
+}
+
+/* Framework badges */
+.frameworkBadge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.frameworkDefault {
+    background-color: #0a6ed1;
+    color: white;
+}
+
+.frameworkLanggraph {
+    background-color: #107e3e;
+    color: white;
+}
+
+.frameworkMaf {
+    background-color: #6c3483;
+    color: white;
+}
+
+.frameworkCrewai {
+    background-color: #e9730c;
+    color: white;
+}
+
+/* Card styling */
+.sapFCard {
+    margin: 0.5rem;
+}
+
+/* Capability toggle styling */
+.capabilityToggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e5e5;
+    background-color: #fafafa;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
+
+.capabilityToggle:last-child {
+    border-bottom: none;
+}
+
+.capabilityToggle > .sapMVBox {
+    flex: 1;
+}
+
+.capabilityToggle .sapMLabel {
+    font-weight: 600;
+    color: #32363a;
+}
+
+.capabilityToggle .sapMText {
+    color: #6a6d70;
+    font-size: 0.875rem;
+}
+
+/* System prompt text area */
+.systemPromptTextArea {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Object Page Header styling */
+.sapUxAPObjectPageHeaderTitle {
+    padding: 1rem;
+}
+
+/* Tool list item styling */
+.sapMListTblRow .sapMHBox {
+    width: 100%;
+}
+
+/* Slider styling */
+.sapMSlider {
+    margin-right: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sapTntToolPage .sapTntSideNavigation {
+        width: 48px;
+    }
+    
+    .capabilityToggle {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .capabilityToggle .sapMSwitch {
+        margin-top: 0.5rem;
+    }
+}

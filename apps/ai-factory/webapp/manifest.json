@@ -1,0 +1,169 @@
+{
+  "_version": "1.42.0",
+  "sap.app": {
+    "id": "ai.factory",
+    "type": "application",
+    "title": "AI Factory",
+    "description": "AI Factory - Platform for creating and managing AI agents",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "dataSources": {
+      "agentRegistry": {
+        "uri": "/api/v1/",
+        "type": "JSON"
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "sap-icon://machine"
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "ai.factory.view.App",
+      "type": "XML",
+      "async": true,
+      "id": "app"
+    },
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {},
+        "sap.f": {},
+        "sap.uxap": {},
+        "sap.tnt": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "": {
+        "type": "sap.ui.model.json.JSONModel"
+      },
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "ai.factory.i18n.i18n"
+        }
+      },
+      "tiles": {
+        "type": "sap.ui.model.json.JSONModel",
+        "uri": "model/tiles.json"
+      }
+    },
+    "routing": {
+      "config": {
+        "routerClass": "sap.m.routing.Router",
+        "viewType": "XML",
+        "viewPath": "ai.factory.view",
+        "controlId": "appContent",
+        "controlAggregation": "pages",
+        "async": true
+      },
+      "routes": [
+        {
+          "name": "home",
+          "pattern": "",
+          "target": "home"
+        },
+        {
+          "name": "agentList",
+          "pattern": "agent-designer",
+          "target": "agentList"
+        },
+        {
+          "name": "agentDetail",
+          "pattern": "agent-designer/{agentId}",
+          "target": "agentDetail"
+        },
+        {
+          "name": "agentCreate",
+          "pattern": "agent-designer/create",
+          "target": "agentCreate"
+        },
+        {
+          "name": "chat",
+          "pattern": "chat",
+          "target": "chat"
+        },
+        {
+          "name": "mcpBuilder",
+          "pattern": "mcp-builder",
+          "target": "mcpBuilder"
+        },
+        {
+          "name": "toolManager",
+          "pattern": "tool-manager",
+          "target": "toolManager"
+        },
+        {
+          "name": "dashboard",
+          "pattern": "dashboard",
+          "target": "dashboard"
+        },
+        {
+          "name": "logs",
+          "pattern": "logs",
+          "target": "logs"
+        }
+      ],
+      "targets": {
+        "home": {
+          "viewName": "Home",
+          "viewLevel": 1
+        },
+        "agentList": {
+          "viewName": "agent.AgentList",
+          "viewLevel": 2
+        },
+        "agentDetail": {
+          "viewName": "agent.AgentDetail",
+          "viewLevel": 3
+        },
+        "agentCreate": {
+          "viewName": "agent.AgentCreate",
+          "viewLevel": 3
+        },
+        "chat": {
+          "viewName": "chat.Chat",
+          "viewLevel": 2
+        },
+        "mcpBuilder": {
+          "viewName": "mcp.McpBuilder",
+          "viewLevel": 2
+        },
+        "toolManager": {
+          "viewName": "tools.ToolManager",
+          "viewLevel": 2
+        },
+        "dashboard": {
+          "viewName": "dashboard.Dashboard",
+          "viewLevel": 2
+        },
+        "logs": {
+          "viewName": "logs.Logs",
+          "viewLevel": 2
+        }
+      }
+    },
+    "resources": {
+      "css": [
+        {
+          "uri": "css/style.css"
+        }
+      ]
+    }
+  }
+}

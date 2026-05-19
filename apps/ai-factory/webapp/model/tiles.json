@@ -1,0 +1,39 @@
+{
+  "tiles": [
+    {
+      "title": "Agent Designer",
+      "subtitle": "Create and manage AI agents",
+      "icon": "sap-icon://robot",
+      "route": "agentList",
+      "info": "Design agents with multiple frameworks"
+    },
+    {
+      "title": "MCP Builder",
+      "subtitle": "Build MCP servers",
+      "icon": "sap-icon://building",
+      "route": "mcpBuilder",
+      "info": "Coming soon"
+    },
+    {
+      "title": "Tool Manager",
+      "subtitle": "Manage tools and MCP servers",
+      "icon": "sap-icon://wrench",
+      "route": "toolManager",
+      "info": "Coming soon"
+    },
+    {
+      "title": "Dashboard",
+      "subtitle": "Analytics and metrics",
+      "icon": "sap-icon://business-objects-experience",
+      "route": "dashboard",
+      "info": "Coming soon"
+    },
+    {
+      "title": "Logs & Monitor",
+      "subtitle": "View execution logs",
+      "icon": "sap-icon://activity-items",
+      "route": "logs",
+      "info": "Coming soon"
+    }
+  ]
+}

@@ -63,7 +63,7 @@
                     <Label text="Framework"/>
                     <ObjectStatus
                         text="{agent>/framework}"
-                        state="{= ${agent>/framework} === 'mcp' ? 'Success' : 'Information'}"
+                        state="{= ${agent>/framework} === 'default' ? 'Success' : 'Information'}"
                         inverted="true"/>
                 </VBox>
                 <VBox class="sapUiMediumMarginEnd">
@@ -125,7 +125,7 @@
                             <Select
                                 selectedKey="{agent>/framework}"
                                 enabled="{viewModel>/editMode}">
-                                <core:Item key="mcp" text="MCP (Model Context Protocol)"/>
+                                <core:Item key="default" text="Default Agent"/>
                                 <core:Item key="langgraph" text="LangGraph"/>
                                 <core:Item key="maf" text="MAF (Microsoft Agent Framework)"/>
                                 <core:Item key="crewai" text="CrewAI"/>

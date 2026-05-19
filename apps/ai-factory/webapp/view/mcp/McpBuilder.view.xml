@@ -1,0 +1,19 @@
+<mvc:View
+    controllerName="ai.factory.controller.mcp.McpBuilder"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m">
+    
+    <Page
+        id="mcpBuilderPage"
+        title="MCP Builder"
+        showNavButton="true"
+        navButtonPress="onNavBack">
+        
+        <content>
+            <IllustratedMessage
+                illustrationType="sapIllus-EmptyList"
+                title="MCP Builder"
+                description="Build and configure MCP agents. Coming soon!"/>
+        </content>
+    </Page>
+</mvc:View>

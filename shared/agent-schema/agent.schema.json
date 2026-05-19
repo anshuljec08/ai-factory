@@ -26,8 +26,8 @@
     },
     "framework": {
       "type": "string",
-      "enum": ["mcp", "langgraph", "maf", "crewai"],
-      "description": "AI framework to use for execution"
+      "enum": ["default", "langgraph", "maf", "crewai"],
+      "description": "AI framework to use for execution. 'default' is the standard tool-calling agent."
     },
     "systemPrompt": {
       "type": "string",

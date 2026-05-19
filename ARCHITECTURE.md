@@ -86,10 +86,109 @@ AI Factory is a **unified platform** that enables:
 
 ---
 
-## 📱 Applications (14 Apps)
+## 📱 Application Architecture
 
-| Category | Apps |
-|----------|------|
+### Single App with Internal Routes (Recommended)
+
+**Decision**: Instead of 14 separate apps, we use a **Single Unified App** with internal routing.
+
+```
+apps/
+└── ai-factory/                    # Single unified app (ACTIVE)
+    └── webapp/
+        ├── Component.js
+        ├── manifest.json
+        ├── index.html
+        ├── view/
+        │   ├── App.view.xml       # ToolPage with side navigation
+        │   ├── Home.view.xml      # Dashboard tiles
+        │   │
+        │   ├── agent/             # 01 - Agent Designer
+        │   │   ├── AgentList.view.xml
+        │   │   ├── AgentDetail.view.xml
+        │   │   └── AgentCreate.view.xml
+        │   │
+        │   ├── mcp/               # 02 - MCP Builder
+        │   │   └── McpBuilder.view.xml
+        │   │
+        │   ├── chat/              # 05 - Custom UI
+        │   │   └── Chat.view.xml
+        │   │
+        │   ├── tools/             # 14 - Tool Manager
+        │   │   └── ToolManager.view.xml
+        │   │
+        │   ├── dashboard/         # 12 - Dashboard
+        │   │   └── Dashboard.view.xml
+        │   │
+        │   └── logs/              # 13 - Logs & Monitor
+        │       └── Logs.view.xml
+        │
+        ├── controller/
+        │   ├── App.controller.js
+        │   ├── BaseController.js
+        │   ├── Home.controller.js
+        │   │
+        │   ├── agent/
+        │   │   ├── AgentList.controller.js
+        │   │   ├── AgentDetail.controller.js
+        │   │   └── AgentCreate.controller.js
+        │   │
+        │   ├── mcp/
+        │   │   └── McpBuilder.controller.js
+        │   │
+        │   ├── chat/
+        │   │   └── Chat.controller.js
+        │   │
+        │   ├── tools/
+        │   │   └── ToolManager.controller.js
+        │   │
+        │   ├── dashboard/
+        │   │   └── Dashboard.controller.js
+        │   │
+        │   └── logs/
+        │       └── Logs.controller.js
+        │
+        ├── service/               # Week 2 - ported from AI_Chatbot_Standalone
+        │   ├── LlmClient.js
+        │   ├── ChatService.js
+        │   ├── ConversationManager.js
+        │   ├── HistoryManager.js
+        │   ├── McpClient.js
+        │   └── ToolSchemaAdapter.js
+        │
+        ├── model/
+        │   └── tiles.json
+        ├── css/
+        │   └── style.css
+        └── i18n/
+            └── i18n.properties
+```
+
+### Benefits
+- **Single deployment** to HTML5 repo
+- **Shared code/components** across all views
+- **Unified navigation** experience
+- **Smaller total bundle** size
+- **Simpler approuter** config (just one route)
+- **Easier maintenance**
+
+### Internal Routes
+
+| Route | View | Description |
+|-------|------|-------------|
+| `/` | Home | Launchpad with tiles |
+| `/agent-designer` | AgentList | List all agents |
+| `/agent-designer/{id}` | AgentDetail | Edit agent |
+| `/agent-designer/create` | AgentCreate | Create new agent |
+| `/mcp-builder` | McpBuilder | Build MCP servers |
+| `/tool-manager` | ToolManager | Manage tools |
+| `/dashboard` | Dashboard | Metrics & monitoring |
+| `/logs` | LogsMonitor | View logs |
+
+### Functional Areas
+
+| Category | Views |
+|----------|-------|
 | **Create & Build** | Agent Designer, MCP Builder, LangGraph Builder, MAF Builder, Tool Manager |
 | **Run & Interact** | Custom UI, Joule Connector, Open WebUI Connector |
 | **Orchestrate** | A2A Designer (LangGraph), A2A Designer (CrewAI), A2A Designer (MAF) |

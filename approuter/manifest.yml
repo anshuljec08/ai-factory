@@ -5,16 +5,26 @@ applications:
     disk_quota: 256M
     buildpacks:
       - nodejs_buildpack
-    services:
-      - ai-factory-auth
-      - ai-factory-html5-repo-runtime
-      - ai-factory-destination
     env:
       destinations: >
         [
           {
             "name": "agent-registry",
             "url": "https://d2o---demo-ai-dev-scf-ai-agent-ai-factory-agent-registry.cfapps.eu10-004.hana.ondemand.com",
-            "forwardAuthToken": true
+            "forwardAuthToken": false
+          },
+          {
+            "name": "ui-app",
+            "url": "https://ai-factory-ui-agile-wolf-ju.cfapps.eu10-004.hana.ondemand.com",
+            "forwardAuthToken": false
+          }
+        ]
+      CORS: >
+        [
+          {
+            "uriPattern": "^/api/.*$",
+            "allowedOrigin": [{"host": "*", "protocol": "https"}],
+            "allowedMethods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allowedHeaders": ["Content-Type", "Authorization"]
           }
         ]

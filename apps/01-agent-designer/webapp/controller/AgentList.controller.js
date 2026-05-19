@@ -122,7 +122,6 @@ sap.ui.define([
          * Edit agent
          */
         onEditAgent: function (oEvent) {
-            oEvent.stopPropagation();
             var oButton = oEvent.getSource();
             var oContext = oButton.getBindingContext();
             var sAgentId = oContext.getProperty("id");
@@ -136,7 +135,6 @@ sap.ui.define([
          * Duplicate agent
          */
         onDuplicateAgent: function (oEvent) {
-            oEvent.stopPropagation();
             var oButton = oEvent.getSource();
             var oContext = oButton.getBindingContext();
             var sAgentId = oContext.getProperty("id");
@@ -155,8 +153,9 @@ sap.ui.define([
 
         _duplicateAgent: function (sAgentId) {
             var that = this;
+            var sApiBaseUrl = this.getOwnerComponent().getApiBaseUrl();
             
-            fetch("/api/v1/agents/" + sAgentId + "/duplicate", {
+            fetch(sApiBaseUrl + "/agents/" + sAgentId + "/duplicate", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -182,7 +181,6 @@ sap.ui.define([
          * Delete agent
          */
         onDeleteAgent: function (oEvent) {
-            oEvent.stopPropagation();
             var oButton = oEvent.getSource();
             var oContext = oButton.getBindingContext();
             var sAgentId = oContext.getProperty("id");

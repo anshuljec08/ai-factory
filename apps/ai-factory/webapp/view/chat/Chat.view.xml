@@ -1,0 +1,178 @@
+<mvc:View
+    controllerName="ai.factory.controller.chat.Chat"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:l="sap.ui.layout">
+    
+    <Page
+        id="chatPage"
+        title="Custom UI - Chat"
+        showNavButton="true"
+        navButtonPress="onNavBack">
+        
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Button
+                        icon="sap-icon://nav-back"
+                        press="onNavBack"
+                        type="Transparent"/>
+                    <Title text="Custom UI - Chat"/>
+                </contentLeft>
+                <contentMiddle>
+                    <Select
+                        id="agentSelect"
+                        width="300px"
+                        change="onAgentChange"
+                        items="{
+                            path: 'agents>/agents',
+                            sorter: { path: 'name' }
+                        }">
+                        <core:Item key="{agents>id}" text="{agents>name}"/>
+                    </Select>
+                </contentMiddle>
+                <contentRight>
+                    <Button
+                        icon="sap-icon://refresh"
+                        press="onClearChat"
+                        tooltip="Clear Chat"
+                        type="Transparent"/>
+                    <Button
+                        icon="sap-icon://settings"
+                        press="onOpenSettings"
+                        tooltip="Settings"
+                        type="Transparent"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        
+        <content>
+            <l:Splitter orientation="Horizontal">
+                <!-- Main Chat Area -->
+                <l:contentAreas>
+                    <VBox class="chatContainer" height="100%">
+                        <!-- Messages List -->
+                        <ScrollContainer
+                            id="chatScrollContainer"
+                            height="100%"
+                            width="100%"
+                            vertical="true"
+                            focusable="false">
+                            <List
+                                id="messageList"
+                                items="{chat>/messages}"
+                                showNoData="true"
+                                noDataText="Start a conversation by typing a message below"
+                                class="chatMessageList">
+                                <CustomListItem class="chatMessageItem {= ${chat>role} === 'user' ? 'userMessage' : 'assistantMessage' }">
+                                    <VBox class="messageContent">
+                                        <HBox alignItems="Center" class="messageHeader">
+                                            <core:Icon
+                                                src="{= ${chat>role} === 'user' ? 'sap-icon://person-placeholder' : 'sap-icon://da-2' }"
+                                                class="messageIcon"/>
+                                            <Label
+                                                text="{= ${chat>role} === 'user' ? 'You' : 'Assistant' }"
+                                                class="messageRole"/>
+                                            <Label
+                                                text="{chat>timestamp}"
+                                                class="messageTimestamp"/>
+                                        </HBox>
+                                        <FormattedText
+                                            htmlText="{chat>content}"
+                                            class="messageText"/>
+                                        <!-- Tool Calls -->
+                                        <VBox visible="{= ${chat>toolCalls} !== undefined &amp;&amp; ${chat>toolCalls}.length > 0 }">
+                                            <Panel
+                                                headerText="Tool Calls"
+                                                expandable="true"
+                                                expanded="false"
+                                                class="toolCallsPanel">
+                                                <List items="{chat>toolCalls}">
+                                                    <StandardListItem
+                                                        title="{chat>name}"
+                                                        description="{chat>status}"
+                                                        icon="sap-icon://wrench"
+                                                        info="{chat>duration}ms"/>
+                                                </List>
+                                            </Panel>
+                                        </VBox>
+                                    </VBox>
+                                </CustomListItem>
+                            </List>
+                        </ScrollContainer>
+                        
+                        <!-- Typing Indicator -->
+                        <HBox
+                            id="typingIndicator"
+                            visible="{chat>/isTyping}"
+                            alignItems="Center"
+                            class="typingIndicator">
+                            <BusyIndicator size="Small"/>
+                            <Text text="Assistant is typing..." class="typingText"/>
+                        </HBox>
+                        
+                        <!-- Input Area -->
+                        <HBox class="chatInputArea" alignItems="End">
+                            <TextArea
+                                id="chatInput"
+                                value="{chat>/inputValue}"
+                                placeholder="Type your message..."
+                                growing="true"
+                                growingMaxLines="5"
+                                width="100%"
+                                class="chatInputField"
+                                submit="onSendMessage"/>
+                            <Button
+                                id="sendButton"
+                                icon="sap-icon://paper-plane"
+                                type="Emphasized"
+                                press="onSendMessage"
+                                enabled="{= ${chat>/inputValue} !== '' &amp;&amp; !${chat>/isTyping} }"
+                                class="sendButton"/>
+                        </HBox>
+                    </VBox>
+                    
+                    <!-- Side Panel (Agent Info) -->
+                    <VBox width="300px" class="sidePanel" visible="{chat>/showSidePanel}">
+                        <Panel headerText="Agent Information" expandable="false">
+                            <VBox class="agentInfoPanel">
+                                <Label text="Name" class="infoLabel"/>
+                                <Text text="{agents>/selectedAgent/name}"/>
+                                
+                                <Label text="Framework" class="infoLabel"/>
+                                <Text text="{agents>/selectedAgent/framework}"/>
+                                
+                                <Label text="Model" class="infoLabel"/>
+                                <Text text="{agents>/selectedAgent/model}"/>
+                                
+                                <Label text="Description" class="infoLabel"/>
+                                <Text text="{agents>/selectedAgent/description}"/>
+                            </VBox>
+                        </Panel>
+                        
+                        <Panel headerText="Available Tools" expandable="true" expanded="false">
+                            <List items="{agents>/selectedAgent/tools}">
+                                <StandardListItem
+                                    title="{agents>name}"
+                                    description="{agents>type}"
+                                    icon="sap-icon://wrench"/>
+                            </List>
+                        </Panel>
+                    </VBox>
+                </l:contentAreas>
+            </l:Splitter>
+        </content>
+        
+        <footer>
+            <Bar>
+                <contentLeft>
+                    <Label text="Agent: {agents>/selectedAgent/name}"/>
+                </contentLeft>
+                <contentRight>
+                    <Label text="Messages: {chat>/messageCount}"/>
+                </contentRight>
+            </Bar>
+        </footer>
+    </Page>
+</mvc:View>

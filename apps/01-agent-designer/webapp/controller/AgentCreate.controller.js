@@ -26,7 +26,7 @@ sap.ui.define([
                 id: "",
                 name: "",
                 description: "",
-                framework: "mcp",
+                framework: "default",
                 model: "claude-4-sonnet",
                 systemPrompt: "",
                 maxSteps: 30,

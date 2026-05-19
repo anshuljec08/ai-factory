@@ -1,0 +1,125 @@
+<mvc:View
+    controllerName="ai.factory.controller.Home"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:l="sap.ui.layout"
+    xmlns:core="sap.ui.core">
+    
+    <Page
+        id="homePage"
+        title="AI Factory"
+        showNavButton="false">
+        
+        <content>
+            <VBox class="sapUiMediumMargin">
+                <Title text="Welcome to AI Factory" class="sapUiMediumMarginBottom" level="H1"/>
+                <Text text="Build, deploy, and manage AI agents with multiple frameworks" class="sapUiMediumMarginBottom"/>
+                
+                <!-- Tiles Grid -->
+                <l:Grid
+                    defaultSpan="XL3 L4 M6 S12"
+                    class="sapUiSmallMarginTop">
+                    
+                    <!-- Agent Designer -->
+                    <GenericTile
+                        header="Agent Designer"
+                        subheader="Create and configure agents"
+                        press="onTilePress"
+                        class="sapUiTinyMarginBegin sapUiTinyMarginTop">
+                        <customData>
+                            <core:CustomData key="route" value="agentList"/>
+                        </customData>
+                        <TileContent>
+                            <NumericContent
+                                value="{stats>/agentCount}"
+                                icon="sap-icon://create"
+                                withMargin="false"/>
+                        </TileContent>
+                    </GenericTile>
+                    
+                    <!-- Custom UI (Chat) -->
+                    <GenericTile
+                        header="Custom UI"
+                        subheader="Chat with agents"
+                        press="onTilePress"
+                        class="sapUiTinyMarginBegin sapUiTinyMarginTop">
+                        <customData>
+                            <core:CustomData key="route" value="chat"/>
+                        </customData>
+                        <TileContent>
+                            <NumericContent
+                                icon="sap-icon://discussion"
+                                withMargin="false"/>
+                        </TileContent>
+                    </GenericTile>
+                    
+                    <!-- MCP Builder -->
+                    <GenericTile
+                        header="MCP Builder"
+                        subheader="Build MCP agents"
+                        press="onTilePress"
+                        class="sapUiTinyMarginBegin sapUiTinyMarginTop">
+                        <customData>
+                            <core:CustomData key="route" value="mcpBuilder"/>
+                        </customData>
+                        <TileContent>
+                            <NumericContent
+                                icon="sap-icon://wrench"
+                                withMargin="false"/>
+                        </TileContent>
+                    </GenericTile>
+                    
+                    <!-- Tool Manager -->
+                    <GenericTile
+                        header="Tool Manager"
+                        subheader="Manage tools and MCP servers"
+                        press="onTilePress"
+                        class="sapUiTinyMarginBegin sapUiTinyMarginTop">
+                        <customData>
+                            <core:CustomData key="route" value="toolManager"/>
+                        </customData>
+                        <TileContent>
+                            <NumericContent
+                                value="{stats>/toolCount}"
+                                icon="sap-icon://tools-opportunity"
+                                withMargin="false"/>
+                        </TileContent>
+                    </GenericTile>
+                    
+                    <!-- Dashboard -->
+                    <GenericTile
+                        header="Dashboard"
+                        subheader="Analytics and metrics"
+                        press="onTilePress"
+                        class="sapUiTinyMarginBegin sapUiTinyMarginTop">
+                        <customData>
+                            <core:CustomData key="route" value="dashboard"/>
+                        </customData>
+                        <TileContent>
+                            <NumericContent
+                                icon="sap-icon://dashboard"
+                                withMargin="false"/>
+                        </TileContent>
+                    </GenericTile>
+                    
+                    <!-- Logs -->
+                    <GenericTile
+                        header="Logs &amp; Monitor"
+                        subheader="View execution logs"
+                        press="onTilePress"
+                        class="sapUiTinyMarginBegin sapUiTinyMarginTop">
+                        <customData>
+                            <core:CustomData key="route" value="logs"/>
+                        </customData>
+                        <TileContent>
+                            <NumericContent
+                                icon="sap-icon://activity-items"
+                                withMargin="false"/>
+                        </TileContent>
+                    </GenericTile>
+                    
+                </l:Grid>
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

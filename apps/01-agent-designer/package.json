@@ -8,8 +8,9 @@
     "lint": "eslint webapp"
   },
   "devDependencies": {
-    "@ui5/cli": "^3.0.0",
     "@sap/ux-specification": "latest",
+    "@sap/ux-ui5-tooling": "^1.24.0",
+    "@ui5/cli": "^3.0.0",
     "eslint": "^8.50.0"
   }
 }

@@ -20,6 +20,51 @@
 
 ## Overview
 
+### Architecture Decision: Single App vs Multiple Apps
+
+> **IMPORTANT:** We have adopted a **Single App Architecture** for Phase 1 instead of 14 separate apps.
+
+**Original Plan (14 separate apps):**
+```
+apps/
+├── 01-agent-designer/
+├── 02-mcp-builder/
+├── 05-custom-ui/
+└── ... (14 separate apps)
+```
+
+**Implemented Architecture (Single unified app):**
+```
+apps/
+├── ai-factory/                    # ✅ Single unified app (ACTIVE)
+│   └── webapp/
+│       ├── view/
+│       │   ├── Home.view.xml
+│       │   ├── agent/             # Agent Designer
+│       │   │   ├── AgentList.view.xml
+│       │   │   ├── AgentDetail.view.xml
+│       │   │   └── AgentCreate.view.xml
+│       │   ├── Chat.view.xml      # Custom UI
+│       │   ├── McpBuilder.view.xml
+│       │   ├── ToolManager.view.xml
+│       │   ├── Dashboard.view.xml
+│       │   └── Logs.view.xml
+│       ├── controller/
+│       │   └── ... (matching controllers)
+│       └── service/
+│           └── ... (shared services)
+├── 01-agent-designer/             # Legacy placeholder
+└── ...                            # Other placeholders for future
+```
+
+**Benefits of Single App Architecture:**
+- ✅ Simpler deployment (one MTA module)
+- ✅ Shared navigation and state via ToolPage layout
+- ✅ Consistent UI/UX across all features
+- ✅ Easier maintenance and code sharing
+- ✅ Single approuter configuration
+- ✅ Faster development iteration
+
 ### Timeline Summary
 
 | Phase | Duration | Focus Area |

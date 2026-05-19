@@ -11,3 +11,15 @@ framework:
     - name: sap.ui.layout
     - name: sap.f
     - name: sap.uxap
+resources:
+  configuration:
+    paths:
+      webapp: webapp
+server:
+  customMiddleware:
+    - name: fiori-tools-servestatic
+      afterMiddleware: compression
+      configuration:
+        paths:
+          - path: /
+            src: webapp

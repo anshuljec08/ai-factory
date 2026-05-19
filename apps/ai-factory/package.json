@@ -1,0 +1,14 @@
+{
+  "name": "ai-factory",
+  "version": "1.0.0",
+  "description": "AI Factory - Platform for creating and managing AI agents",
+  "scripts": {
+    "start": "ui5 serve --port 8080 --open index.html",
+    "build": "ui5 build --clean-dest --dest dist",
+    "lint": "eslint webapp"
+  },
+  "devDependencies": {
+    "@ui5/cli": "^3.0.0",
+    "@sap/ux-ui5-tooling": "^1.0.0"
+  }
+}

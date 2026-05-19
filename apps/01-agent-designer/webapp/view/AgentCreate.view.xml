@@ -67,7 +67,7 @@
                             <Select
                                 id="frameworkSelect"
                                 selectedKey="{newAgent>/framework}">
-                                <core:Item key="mcp" text="MCP (Model Context Protocol)"/>
+                                <core:Item key="default" text="Default Agent"/>
                                 <core:Item key="langgraph" text="LangGraph"/>
                                 <core:Item key="maf" text="MAF (Microsoft Agent Framework)"/>
                                 <core:Item key="crewai" text="CrewAI"/>

@@ -1,0 +1,19 @@
+<mvc:View
+    controllerName="ai.factory.controller.tools.ToolManager"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m">
+    
+    <Page
+        id="toolManagerPage"
+        title="Tool Manager"
+        showNavButton="true"
+        navButtonPress="onNavBack">
+        
+        <content>
+            <IllustratedMessage
+                illustrationType="sapIllus-EmptyList"
+                title="Tool Manager"
+                description="Manage tools and RAG configurations. Coming soon!"/>
+        </content>
+    </Page>
+</mvc:View>

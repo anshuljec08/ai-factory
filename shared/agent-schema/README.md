@@ -27,7 +27,7 @@ const { validateAgentConfig } = require('@ai-factory/agent-schema');
 const agent = {
   id: 'my-agent',
   name: 'My Agent',
-  framework: 'mcp',
+  framework: 'default',
   systemPrompt: 'You are a helpful assistant.',
   model: 'claude-4-sonnet'
 };
@@ -53,7 +53,7 @@ const agent = createAgentWithDefaults({
 });
 
 // Agent now has all default values applied
-console.log(agent.framework);  // 'mcp'
+console.log(agent.framework);  // 'default'
 console.log(agent.model);      // 'claude-4-sonnet'
 console.log(agent.maxSteps);   // 30
 ```
@@ -86,7 +86,7 @@ const {
 } = require('@ai-factory/agent-schema');
 
 console.log(getSupportedFrameworks());
-// ['mcp', 'langgraph', 'maf', 'crewai']
+// ['default', 'langgraph', 'maf', 'crewai']
 
 console.log(getSupportedToolTypes());
 // ['mcp', 'rag', 'graphrag', 'memory', 'api', 'database', ...]
@@ -103,7 +103,7 @@ console.log(getSupportedModels());
 |-------|------|-------------|
 | `id` | string | Unique identifier (lowercase, alphanumeric, hyphens) |
 | `name` | string | Human-readable name |
-| `framework` | enum | `mcp`, `langgraph`, `maf`, `crewai` |
+| `framework` | enum | `default`, `langgraph`, `maf`, `crewai` |
 | `systemPrompt` | string | System prompt defining agent behavior |
 | `model` | string | LLM model identifier |
 

@@ -111,7 +111,7 @@
                             </VBox>
                             <ObjectStatus
                                 text="{framework}"
-                                state="{= ${framework} === 'mcp' ? 'Success' : 'Information'}"/>
+                                state="{= ${framework} === 'default' ? 'Success' : 'Information'}"/>
                             <Text text="{model}"/>
                             <ObjectStatus
                                 text="{status}"

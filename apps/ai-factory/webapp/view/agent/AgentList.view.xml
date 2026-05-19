@@ -1,0 +1,161 @@
+<mvc:View
+    controllerName="ai.factory.controller.agent.AgentList"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core">
+    
+    <Page id="agentListPage" title="Agent Designer" showNavButton="true" navButtonPress="onNavBack">
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Button
+                        icon="sap-icon://nav-back"
+                        type="Transparent"
+                        press="onNavBack"/>
+                    <Title text="Agent Designer" level="H4"/>
+                </contentLeft>
+                <contentRight>
+                    <Button
+                        icon="sap-icon://add"
+                        text="Create Agent"
+                        type="Emphasized"
+                        press="onCreateAgent"/>
+                    <Button
+                        icon="sap-icon://refresh"
+                        tooltip="Refresh"
+                        press="onRefresh"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        
+        <subHeader>
+            <Toolbar>
+                <SearchField
+                    id="searchField"
+                    width="300px"
+                    placeholder="Search agents..."
+                    search="onSearch"
+                    liveChange="onSearch"/>
+                <ToolbarSpacer/>
+                <Select
+                    id="frameworkFilter"
+                    change="onFilterChange"
+                    selectedKey=""
+                    items="{/frameworkFilters}">
+                    <core:Item key="{key}" text="{text}"/>
+                </Select>
+                <Select
+                    id="statusFilter"
+                    change="onFilterChange"
+                    selectedKey=""
+                    items="{/statusFilters}">
+                    <core:Item key="{key}" text="{text}"/>
+                </Select>
+            </Toolbar>
+        </subHeader>
+        
+        <content>
+            <Table
+                id="agentTable"
+                items="{/agents}"
+                growing="true"
+                growingThreshold="20"
+                mode="SingleSelectMaster"
+                selectionChange="onAgentSelect"
+                noDataText="No agents found. Click 'Create Agent' to add one.">
+                
+                <headerToolbar>
+                    <Toolbar>
+                        <Title text="Agents ({= ${/agents}.length })"/>
+                        <ToolbarSpacer/>
+                        <Button
+                            icon="sap-icon://excel-attachment"
+                            tooltip="Export"
+                            press="onExport"/>
+                    </Toolbar>
+                </headerToolbar>
+                
+                <columns>
+                    <Column width="3rem">
+                        <Text text=""/>
+                    </Column>
+                    <Column>
+                        <Text text="Name"/>
+                    </Column>
+                    <Column width="10rem">
+                        <Text text="Framework"/>
+                    </Column>
+                    <Column width="10rem">
+                        <Text text="Model"/>
+                    </Column>
+                    <Column width="8rem">
+                        <Text text="Status"/>
+                    </Column>
+                    <Column width="8rem">
+                        <Text text="Tools"/>
+                    </Column>
+                    <Column width="10rem">
+                        <Text text="Updated"/>
+                    </Column>
+                    <Column width="8rem" hAlign="End">
+                        <Text text="Actions"/>
+                    </Column>
+                </columns>
+                
+                <items>
+                    <ColumnListItem type="Navigation" press="onAgentPress">
+                        <cells>
+                            <core:Icon
+                                src="{= ${metadata/icon} || 'sap-icon://robot'}"
+                                color="{= ${status} === 'active' ? '#107e3e' : '#6a6d70'}"/>
+                            <VBox>
+                                <Text text="{name}" class="sapMTextBold"/>
+                                <Text text="{description}" class="sapUiTinyMarginTop" wrapping="false"/>
+                            </VBox>
+                            <ObjectStatus
+                                text="{framework}"
+                                state="{= ${framework} === 'default' ? 'Success' : 'Information'}"/>
+                            <Text text="{model}"/>
+                            <ObjectStatus
+                                text="{status}"
+                                state="{= ${status} === 'active' ? 'Success' : ${status} === 'draft' ? 'Warning' : 'None'}"
+                                inverted="true"/>
+                            <ObjectNumber
+                                number="{= ${tools} ? ${tools}.length : 0}"
+                                unit="tools"/>
+                            <Text text="{
+                                path: 'metadata/updatedAt',
+                                formatter: '.formatDate'
+                            }"/>
+                            <HBox justifyContent="End">
+                                <Button
+                                    icon="sap-icon://edit"
+                                    type="Transparent"
+                                    tooltip="Edit"
+                                    press="onEditAgent"/>
+                                <Button
+                                    icon="sap-icon://duplicate"
+                                    type="Transparent"
+                                    tooltip="Duplicate"
+                                    press="onDuplicateAgent"/>
+                                <Button
+                                    icon="sap-icon://delete"
+                                    type="Transparent"
+                                    tooltip="Delete"
+                                    press="onDeleteAgent"/>
+                            </HBox>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </content>
+        
+        <footer>
+            <Toolbar>
+                <ToolbarSpacer/>
+                <Text text="AI Factory v1.0.0"/>
+            </Toolbar>
+        </footer>
+    </Page>
+</mvc:View>

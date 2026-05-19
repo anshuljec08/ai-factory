@@ -1,10 +1,61 @@
 # AI Factory - Applications
 
-> Detailed documentation for all 14 applications in the AI Factory platform.
+> Detailed documentation for all functional areas in the AI Factory platform.
 
 ---
 
-## Table of Contents
+## 🏗️ Architecture Decision: Single App with Internal Routes
+
+**Important**: Instead of 14 separate apps, AI Factory uses a **Single Unified App** with internal routing.
+
+### Why Single App?
+- **Single deployment** to HTML5 repo
+- **Shared code/components** across all views
+- **Unified navigation** experience
+- **Smaller total bundle** size
+- **Simpler approuter** config (just one route)
+- **Easier maintenance**
+
+### App Structure
+```
+apps/
+└── ai-factory/                    # Single unified app
+    └── webapp/
+        ├── Component.js
+        ├── manifest.json
+        ├── view/
+        │   ├── App.view.xml       # Shell with navigation
+        │   ├── Home.view.xml      # Launchpad tiles
+        │   ├── AgentDesigner/     # Agent Designer views
+        │   ├── McpBuilder/        # MCP Builder views
+        │   ├── ToolManager/       # Tool Manager views
+        │   └── Dashboard/         # Dashboard views
+        └── controller/
+```
+
+### Internal Routes
+
+| Route | View | Description |
+|-------|------|-------------|
+| `/` | Home | Launchpad with tiles |
+| `/agent-designer` | AgentList | List all agents |
+| `/agent-designer/{id}` | AgentDetail | Edit agent |
+| `/agent-designer/create` | AgentCreate | Create new agent |
+| `/mcp-builder` | McpBuilder | Build MCP servers |
+| `/langgraph-builder` | LangGraphBuilder | Build LangGraph agents |
+| `/maf-builder` | MafBuilder | Build MAF agents |
+| `/tool-manager` | ToolManager | Manage tools |
+| `/custom-ui` | CustomUI | Chat interface |
+| `/a2a-designer/langgraph` | A2ADesignerLangGraph | A2A flows |
+| `/a2a-designer/crewai` | A2ADesignerCrewAI | A2A flows |
+| `/a2a-designer/maf` | A2ADesignerMAF | A2A flows |
+| `/scheduler` | Scheduler | Schedule jobs |
+| `/dashboard` | Dashboard | Metrics & monitoring |
+| `/logs` | LogsMonitor | View logs |
+
+---
+
+## Table of Contents (Functional Areas)
 
 1. [Agent Designer](#1-agent-designer)
 2. [MCP Builder](#2-mcp-builder)

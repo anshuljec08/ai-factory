@@ -96,7 +96,7 @@ function formatErrors(errors) {
  */
 function createAgentWithDefaults(partialAgent) {
   const defaults = {
-    framework: 'mcp',
+        framework: 'default',
     model: 'claude-4-sonnet',
     maxSteps: 30,
     timeout: 30000,
@@ -226,7 +226,7 @@ function getToolSchema() {
  * @returns {Array} - Framework list
  */
 function getSupportedFrameworks() {
-  return ['mcp', 'langgraph', 'maf', 'crewai'];
+  return ['default', 'langgraph', 'maf', 'crewai'];
 }
 
 /**

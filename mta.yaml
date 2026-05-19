@@ -27,28 +27,17 @@ modules:
     requires:
       - name: ai-factory-auth
 
-  # Agent Designer UI (UI5)
-  - name: ai-factory-agent-designer
+  # AI Factory Unified UI (UI5) - Single App with all features
+  - name: ai-factory-ui
     type: html5
-    path: apps/01-agent-designer
+    path: apps/ai-factory
     build-parameters:
       build-result: dist
       builder: custom
       commands:
         - npm ci
         - npm run build
-      supported-platforms: []
-
-  # Launchpad UI (UI5)
-  - name: ai-factory-launchpad
-    type: html5
-    path: launchpad
-    build-parameters:
-      build-result: dist
-      builder: custom
-      commands:
-        - npm ci
-        - npm run build
+        - cp webapp/xs-app.json dist/
       supported-platforms: []
 
   # App Router
@@ -80,14 +69,10 @@ modules:
     build-parameters:
       build-result: resources
       requires:
-        - name: ai-factory-agent-designer
+        - name: ai-factory-ui
           artifacts:
-            - dist/**
-          target-path: resources/ai-factory-agent-designer/
-        - name: ai-factory-launchpad
-          artifacts:
-            - dist/**
-          target-path: resources/ai-factory-launchpad/
+            - dist/*.zip
+          target-path: resources/
 
   # Destination Content Deployer
   - name: ai-factory-dest-deployer

@@ -1,0 +1,87 @@
+<mvc:View
+    controllerName="ai.factory.controller.agent.AgentCreate"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    
+    <Page
+        id="agentCreatePage"
+        title="Create Agent"
+        showNavButton="true"
+        navButtonPress="onNavBack">
+        
+        <content>
+            <VBox class="sapUiMediumMargin">
+                <form:SimpleForm
+                    id="agentForm"
+                    editable="true"
+                    layout="ResponsiveGridLayout"
+                    labelSpanXL="3"
+                    labelSpanL="3"
+                    labelSpanM="3"
+                    labelSpanS="12"
+                    adjustLabelSpan="false"
+                    emptySpanXL="4"
+                    emptySpanL="4"
+                    emptySpanM="4"
+                    emptySpanS="0"
+                    columnsXL="1"
+                    columnsL="1"
+                    columnsM="1"
+                    singleContainerFullSize="false">
+                    
+                    <form:content>
+                        <core:Title text="Basic Information"/>
+                        
+                        <Label text="ID" required="true"/>
+                        <Input value="{/agent/id}" placeholder="Enter unique agent ID (e.g., my-agent)"/>
+                        
+                        <Label text="Name" required="true"/>
+                        <Input value="{/agent/name}" placeholder="Enter agent name"/>
+                        
+                        <Label text="Description"/>
+                        <TextArea value="{/agent/description}" rows="3" placeholder="Enter description"/>
+                        
+                        <Label text="Framework"/>
+                        <Select selectedKey="{/agent/framework}">
+                            <core:Item key="default" text="Default Agent"/>
+                            <core:Item key="langgraph" text="LangGraph"/>
+                            <core:Item key="maf" text="MAF"/>
+                            <core:Item key="crewai" text="CrewAI"/>
+                        </Select>
+                        
+                        <Label text="Model"/>
+                        <Select selectedKey="{/agent/model}">
+                            <core:Item key="claude-4-sonnet" text="Claude 4 Sonnet"/>
+                            <core:Item key="claude-4-opus" text="Claude 4 Opus"/>
+                            <core:Item key="gpt-4o" text="GPT-4o"/>
+                            <core:Item key="gpt-4o-mini" text="GPT-4o Mini"/>
+                        </Select>
+                        
+                        <Label text="Status"/>
+                        <Select selectedKey="{/agent/status}">
+                            <core:Item key="draft" text="Draft"/>
+                            <core:Item key="active" text="Active"/>
+                            <core:Item key="inactive" text="Inactive"/>
+                        </Select>
+                        
+                        <core:Title text="System Prompt"/>
+                        
+                        <Label text="System Prompt"/>
+                        <TextArea value="{/agent/systemPrompt}" rows="8" placeholder="Enter system prompt"/>
+                        
+                    </form:content>
+                </form:SimpleForm>
+            </VBox>
+        </content>
+        
+        <footer>
+            <Toolbar>
+                <ToolbarSpacer/>
+                <Button text="Cancel" press="onCancel"/>
+                <Button text="Create" type="Emphasized" press="onCreate"/>
+            </Toolbar>
+        </footer>
+    </Page>
+</mvc:View>

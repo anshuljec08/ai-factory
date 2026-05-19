@@ -1,0 +1,19 @@
+<mvc:View
+    controllerName="ai.factory.controller.dashboard.Dashboard"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m">
+    
+    <Page
+        id="dashboardPage"
+        title="Dashboard"
+        showNavButton="true"
+        navButtonPress="onNavBack">
+        
+        <content>
+            <IllustratedMessage
+                illustrationType="sapIllus-EmptyList"
+                title="Dashboard"
+                description="View metrics and analytics. Coming soon!"/>
+        </content>
+    </Page>
+</mvc:View>

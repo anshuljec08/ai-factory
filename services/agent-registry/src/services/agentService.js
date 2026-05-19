@@ -73,7 +73,7 @@ function applyDefaults(agent) {
   const now = new Date().toISOString();
   
   return {
-    framework: 'mcp',
+    framework: 'default',
     model: 'claude-4-sonnet',
     maxSteps: 30,
     timeout: 30000,

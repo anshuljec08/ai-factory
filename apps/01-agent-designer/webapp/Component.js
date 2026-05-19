@@ -26,7 +26,7 @@ sap.ui.define([
                 isLoading: false,
                 // Framework options for dropdowns (without "All")
                 frameworks: [
-                    { key: "mcp", text: "MCP (Model Context Protocol)" },
+                    { key: "default", text: "Default Agent" },
                     { key: "langgraph", text: "LangGraph" },
                     { key: "maf", text: "MAF (Microsoft Agent Framework)" },
                     { key: "crewai", text: "CrewAI" }
@@ -34,7 +34,7 @@ sap.ui.define([
                 // Framework filter options (with "All")
                 frameworkFilters: [
                     { key: "", text: "All Frameworks" },
-                    { key: "mcp", text: "MCP" },
+                    { key: "default", text: "Default" },
                     { key: "langgraph", text: "LangGraph" },
                     { key: "maf", text: "MAF" },
                     { key: "crewai", text: "CrewAI" }

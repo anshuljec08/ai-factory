@@ -1,0 +1,71 @@
+<mvc:View
+    controllerName="ai.factory.controller.App"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:tnt="sap.tnt"
+    displayBlock="true">
+    
+    <tnt:ToolPage id="toolPage">
+        <tnt:header>
+            <tnt:ToolHeader>
+                <Button
+                    id="sideNavigationToggleButton"
+                    icon="sap-icon://menu2"
+                    type="Transparent"
+                    press="onSideNavButtonPress"/>
+                <Title text="AI Factory" class="sapUiSmallMarginBegin"/>
+                <ToolbarSpacer/>
+                <Avatar
+                    displaySize="XS"
+                    displayShape="Circle"
+                    initials="AF"
+                    backgroundColor="Accent6"/>
+            </tnt:ToolHeader>
+        </tnt:header>
+        
+        <tnt:sideContent>
+            <tnt:SideNavigation
+                id="sideNavigation"
+                expanded="true"
+                itemSelect="onNavItemSelect">
+                <tnt:NavigationList>
+                    <tnt:NavigationListItem
+                        text="Home"
+                        icon="sap-icon://home"
+                        key="home"/>
+                    <!-- Create & Build -->
+                    <tnt:NavigationListItem
+                        text="Agent Designer"
+                        icon="sap-icon://create"
+                        key="agentList"/>
+                    <tnt:NavigationListItem
+                        text="MCP Builder"
+                        icon="sap-icon://wrench"
+                        key="mcpBuilder"/>
+                    <tnt:NavigationListItem
+                        text="Tool Manager"
+                        icon="sap-icon://tools-opportunity"
+                        key="toolManager"/>
+                    <!-- Run & Interact -->
+                    <tnt:NavigationListItem
+                        text="Custom UI"
+                        icon="sap-icon://discussion"
+                        key="chat"/>
+                    <!-- Manage & Monitor -->
+                    <tnt:NavigationListItem
+                        text="Dashboard"
+                        icon="sap-icon://dashboard"
+                        key="dashboard"/>
+                    <tnt:NavigationListItem
+                        text="Logs"
+                        icon="sap-icon://activity-items"
+                        key="logs"/>
+                </tnt:NavigationList>
+            </tnt:SideNavigation>
+        </tnt:sideContent>
+        
+        <tnt:mainContents>
+            <NavContainer id="appContent"/>
+        </tnt:mainContents>
+    </tnt:ToolPage>
+</mvc:View>
