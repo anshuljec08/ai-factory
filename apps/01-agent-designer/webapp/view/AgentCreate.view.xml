@@ -1,0 +1,299 @@
+<mvc:View
+    controllerName="ai.factory.agentdesigner.controller.AgentCreate"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    
+    <Page id="createAgentPage" title="Create New Agent" showNavButton="true" navButtonPress="onNavBack">
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Button icon="sap-icon://nav-back" press="onNavBack"/>
+                    <Title text="Create New Agent" level="H4"/>
+                </contentLeft>
+                <contentRight>
+                    <Button
+                        text="Create"
+                        type="Emphasized"
+                        icon="sap-icon://save"
+                        press="onCreate"/>
+                    <Button
+                        text="Cancel"
+                        press="onCancel"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        
+        <content>
+            <IconTabBar id="iconTabBar" expanded="true" class="sapUiResponsiveContentPadding">
+                <!-- Basic Info Tab -->
+                <items>
+                    <IconTabFilter icon="sap-icon://hint" text="Basic Info" key="basic">
+                        <form:SimpleForm
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3" labelSpanL="3" labelSpanM="3" labelSpanS="12"
+                            emptySpanXL="4" emptySpanL="4" emptySpanM="4" emptySpanS="0"
+                            columnsXL="1" columnsL="1" columnsM="1">
+                            
+                            <form:toolbar>
+                                <Toolbar>
+                                    <Title text="Basic Information"/>
+                                </Toolbar>
+                            </form:toolbar>
+                            
+                            <Label text="Name" required="true"/>
+                            <Input
+                                id="nameInput"
+                                value="{newAgent>/name}"
+                                placeholder="My Agent"
+                                liveChange="onNameChange"/>
+                            
+                            <Label text="ID"/>
+                            <Input
+                                id="idInput"
+                                value="{newAgent>/id}"
+                                placeholder="my-agent"
+                                description="Auto-generated from name"/>
+                            
+                            <Label text="Description"/>
+                            <TextArea
+                                value="{newAgent>/description}"
+                                rows="3"
+                                placeholder="Brief description of what this agent does"/>
+                            
+                            <Label text="Framework" required="true"/>
+                            <Select
+                                id="frameworkSelect"
+                                selectedKey="{newAgent>/framework}">
+                                <core:Item key="mcp" text="MCP (Model Context Protocol)"/>
+                                <core:Item key="langgraph" text="LangGraph"/>
+                                <core:Item key="maf" text="MAF (Microsoft Agent Framework)"/>
+                                <core:Item key="crewai" text="CrewAI"/>
+                            </Select>
+                            
+                            <Label text="Model" required="true"/>
+                            <Select
+                                id="modelSelect"
+                                selectedKey="{newAgent>/model}">
+                                <core:Item key="claude-4-sonnet" text="Claude 4 Sonnet (Recommended)"/>
+                                <core:Item key="claude-4-opus" text="Claude 4 Opus"/>
+                                <core:Item key="claude-3.5-sonnet" text="Claude 3.5 Sonnet"/>
+                                <core:Item key="gpt-4o" text="GPT-4o"/>
+                                <core:Item key="gpt-4o-mini" text="GPT-4o Mini"/>
+                                <core:Item key="gemini-2.0-flash" text="Gemini 2.0 Flash"/>
+                            </Select>
+                            
+                            <Label text="Category"/>
+                            <Input
+                                value="{newAgent>/metadata/category}"
+                                placeholder="e.g., Operations, Sales, Support"/>
+                            
+                            <Label text="Icon"/>
+                            <Input
+                                value="{newAgent>/metadata/icon}"
+                                placeholder="sap-icon://robot"/>
+                        </form:SimpleForm>
+                    </IconTabFilter>
+                    
+                    <!-- System Prompt Tab -->
+                    <IconTabFilter icon="sap-icon://document-text" text="System Prompt" key="prompt">
+                        <VBox class="sapUiSmallMargin">
+                            <MessageStrip
+                                text="The system prompt defines your agent's personality, capabilities, and behavior. Be specific about what the agent should and shouldn't do."
+                                type="Information"
+                                showIcon="true"
+                                class="sapUiSmallMarginBottom"/>
+                            
+                            <Label text="System Prompt" required="true" class="sapUiSmallMarginBottom"/>
+                            <TextArea
+                                id="systemPromptTextArea"
+                                value="{newAgent>/systemPrompt}"
+                                rows="20"
+                                width="100%"
+                                placeholder="You are a helpful AI assistant...
+
+Your role is to help users with:
+- Task 1
+- Task 2
+- Task 3
+
+Guidelines:
+- Be helpful and accurate
+- Ask clarifying questions when needed
+- Provide clear, concise responses"
+                                class="systemPromptTextArea"/>
+                            <Text text="{= ${newAgent>/systemPrompt} ? ${newAgent>/systemPrompt}.length : 0} characters" class="sapUiTinyMarginTop"/>
+                        </VBox>
+                    </IconTabFilter>
+                    
+                    <!-- Configuration Tab -->
+                    <IconTabFilter icon="sap-icon://action-settings" text="Configuration" key="config">
+                        <form:SimpleForm
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3" labelSpanL="3" labelSpanM="3" labelSpanS="12">
+                            
+                            <form:toolbar>
+                                <Toolbar>
+                                    <Title text="Model Configuration"/>
+                                </Toolbar>
+                            </form:toolbar>
+                            
+                            <Label text="Temperature"/>
+                            <HBox alignItems="Center">
+                                <Slider
+                                    value="{newAgent>/modelConfig/temperature}"
+                                    min="0"
+                                    max="2"
+                                    step="0.1"
+                                    width="300px"/>
+                                <Text text="{newAgent>/modelConfig/temperature}" class="sapUiSmallMarginBegin"/>
+                            </HBox>
+                            
+                            <Label text="Max Tokens"/>
+                            <Input
+                                value="{newAgent>/modelConfig/maxTokens}"
+                                type="Number"
+                                width="150px"/>
+                            
+                            <Label text="Top P"/>
+                            <HBox alignItems="Center">
+                                <Slider
+                                    value="{newAgent>/modelConfig/topP}"
+                                    min="0"
+                                    max="1"
+                                    step="0.05"
+                                    width="300px"/>
+                                <Text text="{newAgent>/modelConfig/topP}" class="sapUiSmallMarginBegin"/>
+                            </HBox>
+                            
+                            <Label text="Max Steps"/>
+                            <Input
+                                value="{newAgent>/maxSteps}"
+                                type="Number"
+                                width="150px"
+                                description="Maximum tool calls per conversation"/>
+                            
+                            <Label text="Timeout (ms)"/>
+                            <Input
+                                value="{newAgent>/timeout}"
+                                type="Number"
+                                width="150px"/>
+                        </form:SimpleForm>
+                    </IconTabFilter>
+                    
+                    <!-- Capabilities Tab -->
+                    <IconTabFilter icon="sap-icon://activate" text="Capabilities" key="capabilities">
+                        <VBox class="sapUiSmallMargin">
+                            <MessageStrip
+                                text="Enable capabilities based on what your agent needs to do. More capabilities = more power but also more risk."
+                                type="Warning"
+                                showIcon="true"
+                                class="sapUiSmallMarginBottom"/>
+                            
+                            <List>
+                                <CustomListItem>
+                                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+                                        <VBox>
+                                            <Label text="Streaming" class="sapMTextBold"/>
+                                            <Text text="Enable streaming responses for real-time output"/>
+                                        </VBox>
+                                        <Switch state="{newAgent>/capabilities/streaming}"/>
+                                    </HBox>
+                                </CustomListItem>
+                                <CustomListItem>
+                                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+                                        <VBox>
+                                            <Label text="Human in Loop" class="sapMTextBold"/>
+                                            <Text text="Require human approval for certain actions"/>
+                                        </VBox>
+                                        <Switch state="{newAgent>/capabilities/humanInLoop}"/>
+                                    </HBox>
+                                </CustomListItem>
+                                <CustomListItem>
+                                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+                                        <VBox>
+                                            <Label text="Memory" class="sapMTextBold"/>
+                                            <Text text="Enable conversation memory across sessions"/>
+                                        </VBox>
+                                        <Switch state="{newAgent>/capabilities/memory}"/>
+                                    </HBox>
+                                </CustomListItem>
+                                <CustomListItem>
+                                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+                                        <VBox>
+                                            <Label text="Code Execution" class="sapMTextBold"/>
+                                            <Text text="Allow the agent to execute code (use with caution)"/>
+                                        </VBox>
+                                        <Switch state="{newAgent>/capabilities/codeExecution}"/>
+                                    </HBox>
+                                </CustomListItem>
+                                <CustomListItem>
+                                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+                                        <VBox>
+                                            <Label text="File Access" class="sapMTextBold"/>
+                                            <Text text="Allow file system access"/>
+                                        </VBox>
+                                        <Switch state="{newAgent>/capabilities/fileAccess}"/>
+                                    </HBox>
+                                </CustomListItem>
+                                <CustomListItem>
+                                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+                                        <VBox>
+                                            <Label text="Web Browsing" class="sapMTextBold"/>
+                                            <Text text="Allow web browsing and scraping"/>
+                                        </VBox>
+                                        <Switch state="{newAgent>/capabilities/webBrowsing}"/>
+                                    </HBox>
+                                </CustomListItem>
+                            </List>
+                        </VBox>
+                    </IconTabFilter>
+                    
+                    <!-- Guardrails Tab -->
+                    <IconTabFilter icon="sap-icon://shield" text="Guardrails" key="guardrails">
+                        <form:SimpleForm
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3" labelSpanL="3" labelSpanM="3" labelSpanS="12">
+                            
+                            <form:toolbar>
+                                <Toolbar>
+                                    <Title text="Safety Guardrails"/>
+                                </Toolbar>
+                            </form:toolbar>
+                            
+                            <Label text="Input Filter"/>
+                            <Switch state="{newAgent>/guardrails/inputFilter}"/>
+                            
+                            <Label text="Output Filter"/>
+                            <Switch state="{newAgent>/guardrails/outputFilter}"/>
+                            
+                            <Label text="Content Policy"/>
+                            <Select selectedKey="{newAgent>/guardrails/contentPolicy}">
+                                <core:Item key="strict" text="Strict - Maximum safety"/>
+                                <core:Item key="moderate" text="Moderate - Balanced"/>
+                                <core:Item key="permissive" text="Permissive - Minimal filtering"/>
+                            </Select>
+                        </form:SimpleForm>
+                    </IconTabFilter>
+                </items>
+            </IconTabBar>
+        </content>
+        
+        <footer>
+            <Toolbar>
+                <ToolbarSpacer/>
+                <Button
+                    text="Cancel"
+                    press="onCancel"/>
+                <Button
+                    text="Create Agent"
+                    type="Emphasized"
+                    press="onCreate"/>
+            </Toolbar>
+        </footer>
+    </Page>
+</mvc:View>

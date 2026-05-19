@@ -1,0 +1,427 @@
+<mvc:View
+    controllerName="ai.factory.agentdesigner.controller.AgentDetail"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core"
+    xmlns:uxap="sap.uxap">
+    
+    <uxap:ObjectPageLayout id="objectPageLayout" showTitleInHeaderContent="true">
+        <uxap:headerTitle>
+            <uxap:ObjectPageDynamicHeaderTitle>
+                <uxap:expandedHeading>
+                    <HBox alignItems="Center">
+                        <core:Icon
+                            src="{= ${agent>/metadata/icon} || 'sap-icon://robot'}"
+                            size="2rem"
+                            class="sapUiSmallMarginEnd"/>
+                        <Title text="{agent>/name}" level="H1"/>
+                    </HBox>
+                </uxap:expandedHeading>
+                <uxap:snappedHeading>
+                    <Title text="{agent>/name}"/>
+                </uxap:snappedHeading>
+                <uxap:expandedContent>
+                    <Text text="{agent>/description}"/>
+                </uxap:expandedContent>
+                <uxap:actions>
+                    <Button
+                        text="Save"
+                        type="Emphasized"
+                        icon="sap-icon://save"
+                        press="onSave"
+                        visible="{viewModel>/editMode}"/>
+                    <Button
+                        text="Edit"
+                        type="Default"
+                        icon="sap-icon://edit"
+                        press="onEdit"
+                        visible="{= !${viewModel>/editMode}}"/>
+                    <Button
+                        text="Cancel"
+                        press="onCancel"
+                        visible="{viewModel>/editMode}"/>
+                    <Button
+                        icon="sap-icon://delete"
+                        type="Reject"
+                        tooltip="Delete Agent"
+                        press="onDelete"/>
+                </uxap:actions>
+                <uxap:navigationActions>
+                    <Button
+                        icon="sap-icon://nav-back"
+                        tooltip="Back"
+                        press="onNavBack"/>
+                </uxap:navigationActions>
+            </uxap:ObjectPageDynamicHeaderTitle>
+        </uxap:headerTitle>
+        
+        <uxap:headerContent>
+            <HBox wrap="Wrap">
+                <VBox class="sapUiMediumMarginEnd">
+                    <Label text="Framework"/>
+                    <ObjectStatus
+                        text="{agent>/framework}"
+                        state="{= ${agent>/framework} === 'mcp' ? 'Success' : 'Information'}"
+                        inverted="true"/>
+                </VBox>
+                <VBox class="sapUiMediumMarginEnd">
+                    <Label text="Model"/>
+                    <Text text="{agent>/model}"/>
+                </VBox>
+                <VBox class="sapUiMediumMarginEnd">
+                    <Label text="Status"/>
+                    <ObjectStatus
+                        text="{agent>/status}"
+                        state="{= ${agent>/status} === 'active' ? 'Success' : ${agent>/status} === 'draft' ? 'Warning' : 'None'}"
+                        inverted="true"/>
+                </VBox>
+                <VBox class="sapUiMediumMarginEnd">
+                    <Label text="Version"/>
+                    <Text text="{agent>/version}"/>
+                </VBox>
+                <VBox>
+                    <Label text="Tools"/>
+                    <ObjectNumber
+                        number="{= ${agent>/tools} ? ${agent>/tools}.length : 0}"
+                        unit="configured"/>
+                </VBox>
+            </HBox>
+        </uxap:headerContent>
+        
+        <uxap:sections>
+            <!-- Basic Information Section -->
+            <uxap:ObjectPageSection title="Basic Information" id="basicInfoSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection>
+                        <form:SimpleForm
+                            editable="{viewModel>/editMode}"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3" labelSpanL="3" labelSpanM="3" labelSpanS="12"
+                            emptySpanXL="4" emptySpanL="4" emptySpanM="4" emptySpanS="0"
+                            columnsXL="1" columnsL="1" columnsM="1">
+                            
+                            <Label text="ID" required="true"/>
+                            <Input
+                                value="{agent>/id}"
+                                editable="{= ${viewModel>/editMode} &amp;&amp; ${viewModel>/isNew}}"
+                                placeholder="agent-id"/>
+                            
+                            <Label text="Name" required="true"/>
+                            <Input
+                                value="{agent>/name}"
+                                editable="{viewModel>/editMode}"
+                                placeholder="Agent Name"/>
+                            
+                            <Label text="Description"/>
+                            <TextArea
+                                value="{agent>/description}"
+                                editable="{viewModel>/editMode}"
+                                rows="2"
+                                placeholder="Brief description of the agent"/>
+                            
+                            <Label text="Framework" required="true"/>
+                            <Select
+                                selectedKey="{agent>/framework}"
+                                enabled="{viewModel>/editMode}">
+                                <core:Item key="mcp" text="MCP (Model Context Protocol)"/>
+                                <core:Item key="langgraph" text="LangGraph"/>
+                                <core:Item key="maf" text="MAF (Microsoft Agent Framework)"/>
+                                <core:Item key="crewai" text="CrewAI"/>
+                            </Select>
+                            
+                            <Label text="Model" required="true"/>
+                            <Select
+                                selectedKey="{agent>/model}"
+                                enabled="{viewModel>/editMode}">
+                                <core:Item key="claude-4-sonnet" text="Claude 4 Sonnet"/>
+                                <core:Item key="claude-4-opus" text="Claude 4 Opus"/>
+                                <core:Item key="claude-3.5-sonnet" text="Claude 3.5 Sonnet"/>
+                                <core:Item key="gpt-4o" text="GPT-4o"/>
+                                <core:Item key="gpt-4o-mini" text="GPT-4o Mini"/>
+                                <core:Item key="gemini-2.0-flash" text="Gemini 2.0 Flash"/>
+                            </Select>
+                            
+                            <Label text="Status"/>
+                            <Select
+                                selectedKey="{agent>/status}"
+                                enabled="{viewModel>/editMode}">
+                                <core:Item key="draft" text="Draft"/>
+                                <core:Item key="active" text="Active"/>
+                                <core:Item key="inactive" text="Inactive"/>
+                                <core:Item key="archived" text="Archived"/>
+                            </Select>
+                        </form:SimpleForm>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+            
+            <!-- System Prompt Section -->
+            <uxap:ObjectPageSection title="System Prompt" id="systemPromptSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection>
+                        <VBox class="sapUiSmallMargin">
+                            <Label text="System Prompt" required="true" class="sapUiSmallMarginBottom"/>
+                            <TextArea
+                                id="systemPromptTextArea"
+                                value="{agent>/systemPrompt}"
+                                editable="{viewModel>/editMode}"
+                                rows="15"
+                                width="100%"
+                                placeholder="Enter the system prompt that defines the agent's behavior..."
+                                class="systemPromptTextArea"/>
+                            <Text text="{= ${agent>/systemPrompt} ? ${agent>/systemPrompt}.length : 0} characters" class="sapUiTinyMarginTop"/>
+                        </VBox>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+            
+            <!-- Model Configuration Section -->
+            <uxap:ObjectPageSection title="Model Configuration" id="modelConfigSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection>
+                        <form:SimpleForm
+                            editable="{viewModel>/editMode}"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3" labelSpanL="3" labelSpanM="3" labelSpanS="12">
+                            
+                            <Label text="Temperature"/>
+                            <Slider
+                                value="{agent>/modelConfig/temperature}"
+                                min="0"
+                                max="2"
+                                step="0.1"
+                                enableTickmarks="true"
+                                enabled="{viewModel>/editMode}"
+                                width="300px"/>
+                            <Text text="{agent>/modelConfig/temperature}"/>
+                            
+                            <Label text="Max Tokens"/>
+                            <Input
+                                value="{agent>/modelConfig/maxTokens}"
+                                type="Number"
+                                editable="{viewModel>/editMode}"/>
+                            
+                            <Label text="Top P"/>
+                            <Slider
+                                value="{agent>/modelConfig/topP}"
+                                min="0"
+                                max="1"
+                                step="0.05"
+                                enabled="{viewModel>/editMode}"
+                                width="300px"/>
+                            <Text text="{agent>/modelConfig/topP}"/>
+                            
+                            <Label text="Max Steps"/>
+                            <Input
+                                value="{agent>/maxSteps}"
+                                type="Number"
+                                editable="{viewModel>/editMode}"/>
+                            
+                            <Label text="Timeout (ms)"/>
+                            <Input
+                                value="{agent>/timeout}"
+                                type="Number"
+                                editable="{viewModel>/editMode}"/>
+                        </form:SimpleForm>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+            
+            <!-- Capabilities Section -->
+            <uxap:ObjectPageSection title="Capabilities" id="capabilitiesSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection>
+                        <VBox class="sapUiSmallMargin">
+                            <HBox class="capabilityToggle">
+                                <VBox>
+                                    <Label text="Streaming"/>
+                                    <Text text="Enable streaming responses"/>
+                                </VBox>
+                                <Switch
+                                    state="{agent>/capabilities/streaming}"
+                                    enabled="{viewModel>/editMode}"/>
+                            </HBox>
+                            <HBox class="capabilityToggle">
+                                <VBox>
+                                    <Label text="Human in Loop"/>
+                                    <Text text="Require human approval for certain actions"/>
+                                </VBox>
+                                <Switch
+                                    state="{agent>/capabilities/humanInLoop}"
+                                    enabled="{viewModel>/editMode}"/>
+                            </HBox>
+                            <HBox class="capabilityToggle">
+                                <VBox>
+                                    <Label text="Memory"/>
+                                    <Text text="Enable conversation memory"/>
+                                </VBox>
+                                <Switch
+                                    state="{agent>/capabilities/memory}"
+                                    enabled="{viewModel>/editMode}"/>
+                            </HBox>
+                            <HBox class="capabilityToggle">
+                                <VBox>
+                                    <Label text="Code Execution"/>
+                                    <Text text="Allow code execution"/>
+                                </VBox>
+                                <Switch
+                                    state="{agent>/capabilities/codeExecution}"
+                                    enabled="{viewModel>/editMode}"/>
+                            </HBox>
+                            <HBox class="capabilityToggle">
+                                <VBox>
+                                    <Label text="File Access"/>
+                                    <Text text="Allow file system access"/>
+                                </VBox>
+                                <Switch
+                                    state="{agent>/capabilities/fileAccess}"
+                                    enabled="{viewModel>/editMode}"/>
+                            </HBox>
+                            <HBox class="capabilityToggle">
+                                <VBox>
+                                    <Label text="Web Browsing"/>
+                                    <Text text="Allow web browsing"/>
+                                </VBox>
+                                <Switch
+                                    state="{agent>/capabilities/webBrowsing}"
+                                    enabled="{viewModel>/editMode}"/>
+                            </HBox>
+                        </VBox>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+            
+            <!-- Tools Section -->
+            <uxap:ObjectPageSection title="Tools" id="toolsSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection>
+                        <VBox class="sapUiSmallMargin">
+                            <Toolbar>
+                                <Title text="Configured Tools ({= ${agent>/tools} ? ${agent>/tools}.length : 0})"/>
+                                <ToolbarSpacer/>
+                                <Button
+                                    icon="sap-icon://add"
+                                    text="Add Tool"
+                                    press="onAddTool"
+                                    visible="{viewModel>/editMode}"/>
+                            </Toolbar>
+                            <List
+                                items="{agent>/tools}"
+                                noDataText="No tools configured">
+                                <CustomListItem>
+                                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+                                        <HBox alignItems="Center">
+                                            <core:Icon
+                                                src="{= ${type} === 'mcp' ? 'sap-icon://connected' : ${type} === 'rag' ? 'sap-icon://database' : ${type} === 'api' ? 'sap-icon://world' : 'sap-icon://wrench'}"
+                                                class="sapUiSmallMarginEnd"/>
+                                            <VBox>
+                                                <Text text="{name}" class="sapMTextBold"/>
+                                                <Text text="{description}"/>
+                                            </VBox>
+                                        </HBox>
+                                        <HBox>
+                                            <ObjectStatus
+                                                text="{type}"
+                                                state="Information"
+                                                class="sapUiSmallMarginEnd"/>
+                                            <Switch
+                                                state="{enabled}"
+                                                enabled="{viewModel>/editMode}"/>
+                                            <Button
+                                                icon="sap-icon://delete"
+                                                type="Transparent"
+                                                press="onRemoveTool"
+                                                visible="{viewModel>/editMode}"/>
+                                        </HBox>
+                                    </HBox>
+                                </CustomListItem>
+                            </List>
+                        </VBox>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+            
+            <!-- Guardrails Section -->
+            <uxap:ObjectPageSection title="Guardrails" id="guardrailsSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection>
+                        <form:SimpleForm
+                            editable="{viewModel>/editMode}"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3" labelSpanL="3" labelSpanM="3" labelSpanS="12">
+                            
+                            <Label text="Input Filter"/>
+                            <Switch
+                                state="{agent>/guardrails/inputFilter}"
+                                enabled="{viewModel>/editMode}"/>
+                            
+                            <Label text="Output Filter"/>
+                            <Switch
+                                state="{agent>/guardrails/outputFilter}"
+                                enabled="{viewModel>/editMode}"/>
+                            
+                            <Label text="Content Policy"/>
+                            <Select
+                                selectedKey="{agent>/guardrails/contentPolicy}"
+                                enabled="{viewModel>/editMode}">
+                                <core:Item key="strict" text="Strict"/>
+                                <core:Item key="moderate" text="Moderate"/>
+                                <core:Item key="permissive" text="Permissive"/>
+                            </Select>
+                        </form:SimpleForm>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+            
+            <!-- Metadata Section -->
+            <uxap:ObjectPageSection title="Metadata" id="metadataSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection>
+                        <form:SimpleForm
+                            editable="false"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3" labelSpanL="3" labelSpanM="3" labelSpanS="12">
+                            
+                            <Label text="Created"/>
+                            <Text text="{
+                                path: 'agent>/metadata/createdAt',
+                                formatter: '.formatDate'
+                            }"/>
+                            
+                            <Label text="Updated"/>
+                            <Text text="{
+                                path: 'agent>/metadata/updatedAt',
+                                formatter: '.formatDate'
+                            }"/>
+                            
+                            <Label text="Created By"/>
+                            <Text text="{agent>/metadata/createdBy}"/>
+                            
+                            <Label text="Category"/>
+                            <Input
+                                value="{agent>/metadata/category}"
+                                editable="{viewModel>/editMode}"/>
+                            
+                            <Label text="Icon"/>
+                            <Input
+                                value="{agent>/metadata/icon}"
+                                editable="{viewModel>/editMode}"
+                                placeholder="sap-icon://robot"/>
+                            
+                            <Label text="Tags"/>
+                            <Input
+                                value="{
+                                    path: 'agent>/metadata/tags',
+                                    formatter: '.formatTags'
+                                }"
+                                editable="{viewModel>/editMode}"
+                                placeholder="tag1, tag2, tag3"/>
+                        </form:SimpleForm>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+        </uxap:sections>
+    </uxap:ObjectPageLayout>
+</mvc:View>
