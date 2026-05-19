@@ -5,7 +5,6 @@ description: AI Factory - Platform for creating and managing AI agents
 
 parameters:
   enable-parallel-deployments: true
-  deploy_mode: html5-repo
 
 build-parameters:
   before-all: []
@@ -83,12 +82,12 @@ modules:
       requires:
         - name: ai-factory-agent-designer
           artifacts:
-            - dist/*
-          target-path: resources/agent-designer
+            - dist/**
+          target-path: resources/ai-factory-agent-designer/
         - name: ai-factory-launchpad
           artifacts:
-            - dist/*
-          target-path: resources/launchpad
+            - dist/**
+          target-path: resources/ai-factory-launchpad/
 
   # Destination Content Deployer
   - name: ai-factory-dest-deployer

@@ -1,19 +1,7 @@
 {
-  "welcomeFile": "/launchpad/flpSandbox.html",
+  "welcomeFile": "/index.html",
   "authenticationMethod": "none",
   "routes": [
-    {
-      "source": "^/launchpad/(.*)$",
-      "target": "$1",
-      "localDir": "../launchpad/webapp",
-      "authenticationType": "none"
-    },
-    {
-      "source": "^/agent-designer/(.*)$",
-      "target": "$1",
-      "localDir": "../apps/01-agent-designer/webapp",
-      "authenticationType": "none"
-    },
     {
       "source": "^/api/(.*)$",
       "target": "/api/$1",

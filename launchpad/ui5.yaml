@@ -8,25 +8,6 @@ framework:
   libraries:
     - name: sap.m
     - name: sap.ui.core
+    - name: sap.ui.layout
+    - name: sap.f
     - name: sap.ushell
-server:
-  customMiddleware:
-    - name: fiori-tools-proxy
-      afterMiddleware: compression
-      configuration:
-        ignoreCertError: false
-        ui5:
-          path:
-            - /resources
-            - /test-resources
-          url: https://sapui5.hana.ondemand.com
-        backend:
-          - path: /api
-            url: http://localhost:3001
-            destination: agent-registry
-          - path: /agent-designer
-            url: http://localhost:8080
-          - path: /custom-ui
-            url: http://localhost:8081
-          - path: /mcp-builder
-            url: http://localhost:8082
