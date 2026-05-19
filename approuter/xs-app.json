@@ -1,7 +1,19 @@
 {
-  "welcomeFile": "/agent-designer/index.html",
+  "welcomeFile": "/launchpad/flpSandbox.html",
   "authenticationMethod": "none",
   "routes": [
+    {
+      "source": "^/launchpad/(.*)$",
+      "target": "$1",
+      "localDir": "../launchpad/webapp",
+      "authenticationType": "none"
+    },
+    {
+      "source": "^/agent-designer/(.*)$",
+      "target": "$1",
+      "localDir": "../apps/01-agent-designer/webapp",
+      "authenticationType": "none"
+    },
     {
       "source": "^/api/(.*)$",
       "target": "/api/$1",
@@ -9,9 +21,9 @@
       "authenticationType": "none"
     },
     {
-      "source": "^/agent-designer/(.*)$",
-      "target": "$1",
-      "service": "html5-apps-repo-rt",
+      "source": "^/resources/(.*)$",
+      "target": "/resources/$1",
+      "destination": "ui5",
       "authenticationType": "none"
     },
     {

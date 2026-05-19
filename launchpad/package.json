@@ -1,0 +1,14 @@
+{
+  "name": "ai-factory-launchpad",
+  "version": "1.0.0",
+  "description": "AI Factory Fiori Launchpad",
+  "scripts": {
+    "start": "ui5 serve --port 8000 --open flpSandbox.html",
+    "build": "ui5 build --clean-dest --dest dist",
+    "lint": "eslint webapp"
+  },
+  "devDependencies": {
+    "@ui5/cli": "^3.0.0",
+    "@sap/ux-ui5-tooling": "^1.0.0"
+  }
+}
