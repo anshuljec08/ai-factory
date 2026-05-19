@@ -374,13 +374,13 @@ curl -X DELETE http://localhost:3001/api/v1/agents/test-agent
 - [x] Day 4-5: AI Factory App + Agent Designer ✅
 - [x] Day 6-7: Placeholder Views + Deployment Config ✅
 
-### Week 2 ⏳ IN PROGRESS
+### Week 2 ✅ COMPLETE
 - [x] Day 8: Custom UI (Chat) Setup ✅
 - [x] Day 9: Port Services ✅
 - [x] Day 10: Agent Selection ✅
-- [ ] Day 11: MCP Builder
-- [ ] Day 12: Tool Manager
-- [ ] Day 13-14: Integration & Testing
+- [x] Day 11: MCP Builder ✅
+- [x] Day 12: Tool Manager ✅
+- [x] Day 13-14: Integration & Testing ✅
 
 ### Week 3 (Optional)
 - [ ] Day 15-17: Enhancements

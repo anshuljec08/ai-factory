@@ -1,7 +1,10 @@
 <mvc:View
     controllerName="ai.factory.controller.mcp.McpBuilder"
     xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m">
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
     
     <Page
         id="mcpBuilderPage"
@@ -9,11 +12,296 @@
         showNavButton="true"
         navButtonPress="onNavBack">
         
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Button icon="sap-icon://nav-back" press="onNavBack" type="Transparent"/>
+                    <Title text="MCP Builder"/>
+                </contentLeft>
+                <contentRight>
+                    <Button 
+                        id="refreshBtn"
+                        icon="sap-icon://refresh" 
+                        press="onRefresh" 
+                        type="Transparent"
+                        tooltip="Refresh Tools"/>
+                </contentRight>
+            </Bar>
+        </customHeader>
+        
         <content>
-            <IllustratedMessage
-                illustrationType="sapIllus-EmptyList"
-                title="MCP Builder"
-                description="Build and configure MCP agents. Coming soon!"/>
+            <VBox class="sapUiMediumMargin">
+                <!-- Connection Panel -->
+                <Panel headerText="MCP Server Connection" expandable="true" expanded="true" class="sapUiSmallMarginBottom">
+                    <VBox class="sapUiSmallMargin">
+                        <HBox alignItems="End" class="sapUiSmallMarginBottom">
+                            <VBox class="sapUiSmallMarginEnd" width="60%">
+                                <Label text="MCP Server URL" required="true"/>
+                                <Input 
+                                    id="mcpUrlInput"
+                                    placeholder="https://your-mcp-server.com/mcp"
+                                    value="{mcp>/serverUrl}"
+                                    width="100%"
+                                    submit="onConnect"/>
+                            </VBox>
+                            <VBox class="sapUiSmallMarginEnd" width="20%">
+                                <Label text="Authentication"/>
+                                <Select id="authTypeSelect" selectedKey="{mcp>/authType}" width="100%">
+                                    <core:Item key="none" text="None"/>
+                                    <core:Item key="basic" text="Basic Auth"/>
+                                    <core:Item key="bearer" text="Bearer Token"/>
+                                    <core:Item key="apikey" text="API Key"/>
+                                </Select>
+                            </VBox>
+                            <Button 
+                                id="connectBtn"
+                                text="Connect" 
+                                type="Emphasized" 
+                                icon="sap-icon://connected"
+                                press="onConnect"
+                                class="sapUiSmallMarginEnd"/>
+                            <Button 
+                                id="disconnectBtn"
+                                text="Disconnect" 
+                                type="Reject" 
+                                icon="sap-icon://disconnected"
+                                press="onDisconnect"
+                                visible="{mcp>/isConnected}"/>
+                        </HBox>
+                        
+                        <!-- Auth Config (conditional) -->
+                        <VBox id="authConfigPanel" visible="{= ${mcp>/authType} !== 'none' }">
+                            <HBox>
+                                <VBox class="sapUiSmallMarginEnd" width="40%" visible="{= ${mcp>/authType} === 'basic' }">
+                                    <Label text="Username"/>
+                                    <Input id="authUsername" value="{mcp>/authConfig/username}" width="100%"/>
+                                </VBox>
+                                <VBox class="sapUiSmallMarginEnd" width="40%" visible="{= ${mcp>/authType} === 'basic' }">
+                                    <Label text="Password"/>
+                                    <Input id="authPassword" type="Password" value="{mcp>/authConfig/password}" width="100%"/>
+                                </VBox>
+                                <VBox class="sapUiSmallMarginEnd" width="80%" visible="{= ${mcp>/authType} === 'bearer' || ${mcp>/authType} === 'apikey' }">
+                                    <Label text="{= ${mcp>/authType} === 'bearer' ? 'Bearer Token' : 'API Key' }"/>
+                                    <Input id="authToken" type="Password" value="{mcp>/authConfig/token}" width="100%"/>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+                        
+                        <!-- Connection Status -->
+                        <HBox alignItems="Center" class="sapUiSmallMarginTop">
+                            <core:Icon 
+                                src="{= ${mcp>/isConnected} ? 'sap-icon://status-positive' : 'sap-icon://status-inactive' }"
+                                color="{= ${mcp>/isConnected} ? '#107e3e' : '#6a6d70' }"
+                                class="sapUiSmallMarginEnd"/>
+                            <Text text="{= ${mcp>/isConnected} ? 'Connected to ' + ${mcp>/serverUrl} : 'Not connected' }"/>
+                            <Text text=" | " visible="{mcp>/isConnected}" class="sapUiSmallMarginBegin sapUiSmallMarginEnd"/>
+                            <Text text="{= ${mcp>/toolCount} + ' tools discovered' }" visible="{mcp>/isConnected}"/>
+                        </HBox>
+                    </VBox>
+                </Panel>
+                
+                <!-- Discovered Tools Panel -->
+                <Panel headerText="Discovered Tools" expandable="true" expanded="true" class="sapUiSmallMarginBottom">
+                    <VBox>
+                        <!-- Search and Filter -->
+                        <Toolbar class="sapUiSmallMarginBottom">
+                            <SearchField 
+                                id="toolSearchField"
+                                placeholder="Search tools..."
+                                width="300px"
+                                search="onSearchTools"
+                                liveChange="onSearchTools"/>
+                            <ToolbarSpacer/>
+                            <Button 
+                                text="Add Selected to Agent" 
+                                type="Accept" 
+                                icon="sap-icon://add"
+                                press="onAddSelectedTools"
+                                enabled="{= ${mcp>/selectedTools}.length > 0 }"/>
+                            <Button 
+                                text="Export Tools" 
+                                icon="sap-icon://download"
+                                press="onExportTools"
+                                enabled="{mcp>/isConnected}"/>
+                        </Toolbar>
+                        
+                        <!-- Tools Table -->
+                        <Table
+                            id="toolsTable"
+                            items="{mcp>/tools}"
+                            mode="MultiSelect"
+                            selectionChange="onToolSelectionChange"
+                            growing="true"
+                            growingThreshold="20"
+                            noDataText="No tools discovered. Connect to an MCP server to discover tools.">
+                            <columns>
+                                <Column width="25%">
+                                    <Text text="Tool Name"/>
+                                </Column>
+                                <Column width="45%">
+                                    <Text text="Description"/>
+                                </Column>
+                                <Column width="15%">
+                                    <Text text="Parameters"/>
+                                </Column>
+                                <Column width="15%">
+                                    <Text text="Actions"/>
+                                </Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <VBox>
+                                            <Text text="{mcp>name}" class="sapUiSmallMarginBottom"/>
+                                            <ObjectStatus 
+                                                text="{= ${mcp>required} ? 'Required' : 'Optional' }"
+                                                state="{= ${mcp>required} ? 'Warning' : 'Success' }"/>
+                                        </VBox>
+                                        <Text text="{mcp>description}" wrapping="true"/>
+                                        <ObjectNumber 
+                                            number="{= ${mcp>inputSchema/properties} ? Object.keys(${mcp>inputSchema/properties}).length : 0 }"
+                                            unit="params"/>
+                                        <HBox>
+                                            <Button 
+                                                icon="sap-icon://detail-view" 
+                                                type="Transparent"
+                                                press="onViewToolDetails"
+                                                tooltip="View Details"/>
+                                            <Button 
+                                                icon="sap-icon://play" 
+                                                type="Transparent"
+                                                press="onTestTool"
+                                                tooltip="Test Tool"/>
+                                        </HBox>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </VBox>
+                </Panel>
+                
+                <!-- Tool Details Panel -->
+                <Panel 
+                    id="toolDetailsPanel"
+                    headerText="Tool Details" 
+                    expandable="true" 
+                    expanded="true"
+                    visible="{= !!${mcp>/selectedTool} }">
+                    <VBox class="sapUiSmallMargin">
+                        <form:SimpleForm
+                            editable="false"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3"
+                            labelSpanL="3"
+                            labelSpanM="3"
+                            labelSpanS="12"
+                            adjustLabelSpan="false"
+                            emptySpanXL="4"
+                            emptySpanL="4"
+                            emptySpanM="4"
+                            emptySpanS="0"
+                            columnsXL="1"
+                            columnsL="1"
+                            columnsM="1"
+                            singleContainerFullSize="false">
+                            
+                            <form:content>
+                                <Label text="Name"/>
+                                <Text text="{mcp>/selectedTool/name}"/>
+                                
+                                <Label text="Description"/>
+                                <Text text="{mcp>/selectedTool/description}"/>
+                                
+                                <Label text="Input Schema"/>
+                                <TextArea 
+                                    value="{
+                                        path: 'mcp>/selectedTool/inputSchema',
+                                        formatter: '.formatJSON'
+                                    }"
+                                    rows="10"
+                                    width="100%"
+                                    editable="false"
+                                    class="codeTextArea"/>
+                            </form:content>
+                        </form:SimpleForm>
+                        
+                        <!-- Test Tool Section -->
+                        <Panel headerText="Test Tool" expandable="true" expanded="false" class="sapUiSmallMarginTop">
+                            <VBox class="sapUiSmallMargin">
+                                <Label text="Input Parameters (JSON)"/>
+                                <TextArea 
+                                    id="testInputArea"
+                                    value="{mcp>/testInput}"
+                                    rows="5"
+                                    width="100%"
+                                    placeholder='{"param1": "value1"}'
+                                    class="codeTextArea"/>
+                                <HBox class="sapUiSmallMarginTop">
+                                    <Button 
+                                        text="Execute Tool" 
+                                        type="Emphasized" 
+                                        icon="sap-icon://play"
+                                        press="onExecuteTool"/>
+                                    <Button 
+                                        text="Clear" 
+                                        type="Transparent"
+                                        press="onClearTestInput"
+                                        class="sapUiSmallMarginBegin"/>
+                                </HBox>
+                                
+                                <Label text="Output" class="sapUiMediumMarginTop"/>
+                                <TextArea 
+                                    id="testOutputArea"
+                                    value="{mcp>/testOutput}"
+                                    rows="8"
+                                    width="100%"
+                                    editable="false"
+                                    class="codeTextArea"/>
+                            </VBox>
+                        </Panel>
+                    </VBox>
+                </Panel>
+                
+                <!-- Saved MCP Servers Panel -->
+                <Panel headerText="Saved MCP Servers" expandable="true" expanded="false">
+                    <List
+                        id="savedServersList"
+                        items="{mcp>/savedServers}"
+                        noDataText="No saved servers. Connect to a server and save it for quick access.">
+                        <StandardListItem
+                            title="{mcp>name}"
+                            description="{mcp>url}"
+                            icon="sap-icon://it-host"
+                            type="Active"
+                            press="onSelectSavedServer">
+                            <customData>
+                                <core:CustomData key="url" value="{mcp>url}"/>
+                            </customData>
+                        </StandardListItem>
+                    </List>
+                    <Toolbar>
+                        <ToolbarSpacer/>
+                        <Button 
+                            text="Save Current Server" 
+                            icon="sap-icon://save"
+                            press="onSaveServer"
+                            enabled="{mcp>/isConnected}"/>
+                    </Toolbar>
+                </Panel>
+            </VBox>
         </content>
+        
+        <footer>
+            <Bar>
+                <contentRight>
+                    <Button 
+                        text="Add All Tools to Agent" 
+                        type="Accept" 
+                        icon="sap-icon://add-product"
+                        press="onAddAllTools"
+                        enabled="{= ${mcp>/tools}.length > 0 }"/>
+                </contentRight>
+            </Bar>
+        </footer>
     </Page>
 </mvc:View>
