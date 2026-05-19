@@ -1,0 +1,48 @@
+{
+  "name": "ai-factory",
+  "version": "0.1.0",
+  "description": "AI Factory - A unified platform for building, deploying, and managing AI agents using multiple frameworks",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "shared/*",
+    "launchpad"
+  ],
+  "scripts": {
+    "start:registry": "cd services/agent-registry && npm start",
+    "start:designer": "cd apps/01-agent-designer && npm start",
+    "start:custom-ui": "cd apps/05-custom-ui && npm start",
+    "start:mcp-builder": "cd apps/02-mcp-builder && npm start",
+    "start:launchpad": "cd launchpad && npm start",
+    "start:all": "concurrently \"npm run start:registry\" \"npm run start:launchpad\"",
+    "install:all": "npm install && cd services/agent-registry && npm install",
+    "lint": "eslint .",
+    "test": "echo \"No tests yet\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anshuljec08/ai-factory.git"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "mcp",
+    "langgraph",
+    "maf",
+    "crewai",
+    "sap",
+    "btp",
+    "ui5",
+    "fiori"
+  ],
+  "author": "anshuljec08",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "eslint": "^8.50.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
