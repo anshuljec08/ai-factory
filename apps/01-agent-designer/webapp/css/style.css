@@ -1,0 +1,172 @@
+/* Agent Designer Styles */
+
+/* Page header */
+.sapMPageHeader {
+    background-color: #354a5f;
+}
+
+.sapMPageHeader .sapMTitle {
+    color: white;
+}
+
+/* Agent table */
+.sapMTextBold {
+    font-weight: 600;
+}
+
+/* Status badges */
+.sapMObjStatusActive {
+    background-color: #107e3e;
+}
+
+/* Card styling */
+.agentCard {
+    margin: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+/* Form sections */
+.formSection {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f7f7f7;
+    border-radius: 0.5rem;
+}
+
+.formSection .sapMTitle {
+    margin-bottom: 1rem;
+}
+
+/* System prompt textarea */
+.systemPromptTextArea {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Tool list */
+.toolList {
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+}
+
+.toolItem {
+    padding: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.toolItem:last-child {
+    border-bottom: none;
+}
+
+/* JSON editor */
+.jsonEditor {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', monospace;
+    font-size: 0.75rem;
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sapMPage .sapMPageHeader {
+        padding: 0.5rem;
+    }
+    
+    .formSection {
+        padding: 0.5rem;
+    }
+}
+
+/* Loading overlay */
+.loadingOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+/* Empty state */
+.emptyState {
+    text-align: center;
+    padding: 3rem;
+    color: #6a6d70;
+}
+
+.emptyState .sapUiIcon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+/* Action buttons */
+.actionButtons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* Capability toggles */
+.capabilityToggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.capabilityToggle:last-child {
+    border-bottom: none;
+}
+
+/* Model config sliders */
+.modelConfigSlider {
+    margin: 1rem 0;
+}
+
+.modelConfigSlider .sapMLabel {
+    margin-bottom: 0.5rem;
+}
+
+/* Guardrails section */
+.guardrailsSection {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+/* Version badge */
+.versionBadge {
+    background-color: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Icon colors by framework */
+.frameworkIcon-mcp {
+    color: #107e3e;
+}
+
+.frameworkIcon-langgraph {
+    color: #0070f3;
+}
+
+.frameworkIcon-maf {
+    color: #00bcf2;
+}
+
+.frameworkIcon-crewai {
+    color: #ff6b6b;
+}

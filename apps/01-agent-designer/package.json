@@ -1,0 +1,15 @@
+{
+  "name": "@ai-factory/agent-designer",
+  "version": "1.0.0",
+  "description": "Agent Designer - UI5 application for creating and managing AI agents",
+  "scripts": {
+    "start": "ui5 serve --open index.html",
+    "build": "ui5 build --clean-dest",
+    "lint": "eslint webapp"
+  },
+  "devDependencies": {
+    "@ui5/cli": "^3.0.0",
+    "@sap/ux-specification": "latest",
+    "eslint": "^8.50.0"
+  }
+}

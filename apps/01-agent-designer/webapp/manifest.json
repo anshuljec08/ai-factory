@@ -1,0 +1,110 @@
+{
+  "_version": "1.42.0",
+  "sap.app": {
+    "id": "ai.factory.agentdesigner",
+    "type": "application",
+    "title": "Agent Designer",
+    "description": "Create and manage AI agents",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "dataSources": {
+      "agentRegistry": {
+        "uri": "/api/v1/",
+        "type": "JSON"
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "sap-icon://create"
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "ai.factory.agentdesigner.view.App",
+      "type": "XML",
+      "async": true,
+      "id": "app"
+    },
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {},
+        "sap.f": {},
+        "sap.uxap": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "": {
+        "type": "sap.ui.model.json.JSONModel"
+      },
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "ai.factory.agentdesigner.i18n.i18n"
+        }
+      }
+    },
+    "routing": {
+      "config": {
+        "routerClass": "sap.m.routing.Router",
+        "viewType": "XML",
+        "viewPath": "ai.factory.agentdesigner.view",
+        "controlId": "app",
+        "controlAggregation": "pages",
+        "async": true
+      },
+      "routes": [
+        {
+          "name": "agentList",
+          "pattern": "",
+          "target": "agentList"
+        },
+        {
+          "name": "agentDetail",
+          "pattern": "agent/{agentId}",
+          "target": "agentDetail"
+        },
+        {
+          "name": "agentCreate",
+          "pattern": "create",
+          "target": "agentCreate"
+        }
+      ],
+      "targets": {
+        "agentList": {
+          "viewName": "AgentList",
+          "viewLevel": 1
+        },
+        "agentDetail": {
+          "viewName": "AgentDetail",
+          "viewLevel": 2
+        },
+        "agentCreate": {
+          "viewName": "AgentCreate",
+          "viewLevel": 2
+        }
+      }
+    },
+    "resources": {
+      "css": [
+        {
+          "uri": "css/style.css"
+        }
+      ]
+    }
+  }
+}
