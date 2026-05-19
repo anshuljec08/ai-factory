@@ -1,0 +1,20 @@
+---
+applications:
+  - name: ai-factory-approuter
+    memory: 128M
+    disk_quota: 256M
+    buildpacks:
+      - nodejs_buildpack
+    services:
+      - ai-factory-auth
+      - ai-factory-html5-repo-runtime
+      - ai-factory-destination
+    env:
+      destinations: >
+        [
+          {
+            "name": "agent-registry",
+            "url": "https://d2o---demo-ai-dev-scf-ai-agent-ai-factory-agent-registry.cfapps.eu10-004.hana.ondemand.com",
+            "forwardAuthToken": true
+          }
+        ]
