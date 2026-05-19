@@ -37,21 +37,16 @@
                 <Select
                     id="frameworkFilter"
                     change="onFilterChange"
-                    selectedKey="">
-                    <core:Item key="" text="All Frameworks"/>
-                    <core:Item key="mcp" text="MCP"/>
-                    <core:Item key="langgraph" text="LangGraph"/>
-                    <core:Item key="maf" text="MAF"/>
-                    <core:Item key="crewai" text="CrewAI"/>
+                    selectedKey=""
+                    items="{/frameworkFilters}">
+                    <core:Item key="{key}" text="{text}"/>
                 </Select>
                 <Select
                     id="statusFilter"
                     change="onFilterChange"
-                    selectedKey="">
-                    <core:Item key="" text="All Statuses"/>
-                    <core:Item key="active" text="Active"/>
-                    <core:Item key="draft" text="Draft"/>
-                    <core:Item key="inactive" text="Inactive"/>
+                    selectedKey=""
+                    items="{/statusFilters}">
+                    <core:Item key="{key}" text="{text}"/>
                 </Select>
             </Toolbar>
         </subHeader>

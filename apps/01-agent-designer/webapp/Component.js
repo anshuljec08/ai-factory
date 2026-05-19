@@ -24,10 +24,19 @@ sap.ui.define([
                 agents: [],
                 selectedAgent: null,
                 isLoading: false,
+                // Framework options for dropdowns (without "All")
                 frameworks: [
                     { key: "mcp", text: "MCP (Model Context Protocol)" },
                     { key: "langgraph", text: "LangGraph" },
                     { key: "maf", text: "MAF (Microsoft Agent Framework)" },
+                    { key: "crewai", text: "CrewAI" }
+                ],
+                // Framework filter options (with "All")
+                frameworkFilters: [
+                    { key: "", text: "All Frameworks" },
+                    { key: "mcp", text: "MCP" },
+                    { key: "langgraph", text: "LangGraph" },
+                    { key: "maf", text: "MAF" },
                     { key: "crewai", text: "CrewAI" }
                 ],
                 models: [
@@ -37,9 +46,18 @@ sap.ui.define([
                     { key: "gpt-4o-mini", text: "GPT-4o Mini", provider: "OpenAI" },
                     { key: "gemini-2.0-flash", text: "Gemini 2.0 Flash", provider: "Google" }
                 ],
+                // Status options for dropdowns (without "All")
                 statuses: [
                     { key: "draft", text: "Draft" },
                     { key: "active", text: "Active" },
+                    { key: "inactive", text: "Inactive" },
+                    { key: "archived", text: "Archived" }
+                ],
+                // Status filter options (with "All")
+                statusFilters: [
+                    { key: "", text: "All Statuses" },
+                    { key: "active", text: "Active" },
+                    { key: "draft", text: "Draft" },
                     { key: "inactive", text: "Inactive" },
                     { key: "archived", text: "Archived" }
                 ]
