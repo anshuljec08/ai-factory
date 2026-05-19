@@ -1,11 +1,11 @@
 [
   {
     "id": "production-agent",
-    "name": "Production Assistant",
-    "description": "AI assistant for SAP Digital Manufacturing production operations. Helps with production orders, alerts, and shop floor management.",
+    "name": "Production Agent",
+    "description": "SAP Digital Manufacturing assistant for orders, SFCs, and production data",
     "framework": "default",
-    "systemPrompt": "Test prompt",
-    "model": "claude-4-sonnet",
+    "systemPrompt": "You are an AI assistant for SAP Digital Manufacturing (SAP DM). You help production operators and managers with order management, production status, and shop floor operations. You have access to SAP DM APIs via tools. When users ask about orders, production status, or manufacturing data, use the available tools to fetch real data. Always specify the plant parameter when calling tools. IMPORTANT TOOL SELECTION: - You can call MULTIPLE tools in a single response when queries are independent. Batch related queries together to minimize round-trips. For example, query KPIs, stock levels, and orders in parallel. PAGINATION FOR ORDERS: - When using list_orders tool, ALWAYS use pagination parameters: size=15 to get up to 15 orders per request. - If user asks for 'all orders' or a large number, use size=15 and page=0 to get the first batch. - Inform the user about the total count and offer to fetch more pages if needed. CLOSING NONCONFORMANCES: - Use the close_nonconformance tool to close an NC incident. - The 'id' parameter must be the NC incident GUID (not the incident number). - If the user provides an incident number, first use get_non_conformances to look up the GUID, then use close_nonconformance with that GUID. - You can optionally include a 'comments' field with the reason for closing. Present results in a clear, readable format. If you don't know the plant, ask the user.",
+    "model": "claude-opus-4-6",
     "modelConfig": {
       "temperature": 0.3,
       "maxTokens": 4096,
@@ -13,20 +13,20 @@
     },
     "tools": [
       {
-        "name": "get-production-orders",
+        "name": "mcp-server",
         "type": "mcp",
-        "description": "Retrieve production orders with optional filters",
-        "enabled": true
-      },
-      {
-        "name": "get-alerts",
-        "type": "mcp",
-        "description": "Get production alerts and notifications",
-        "enabled": true
+        "description": "SAP Digital Manufacturing MCP tools (orders, SFCs, production data, non-conformances)",
+        "enabled": true,
+        "config": {
+          "mcpUrl": "https://sapdme-order-mcp-sleepy-puku-iu.cfapps.eu10-004.hana.ondemand.com/mcp",
+          "authType": "none",
+          "maxResultChars": 40000,
+          "maxRecords": 50
+        }
       }
     ],
     "maxSteps": 30,
-    "timeout": 60000,
+    "timeout": 30000,
     "capabilities": {
       "streaming": true,
       "humanInLoop": false,
@@ -41,19 +41,223 @@
       "contentPolicy": "strict"
     },
     "version": "1.0.0",
-    "status": "draft",
+    "status": "active",
     "metadata": {
-      "createdAt": "2024-01-15T10:00:00.000Z",
-      "updatedAt": "2026-05-19T13:10:35.130Z",
+      "createdAt": "2025-01-15T10:00:00.000Z",
+      "updatedAt": "2026-05-19T10:00:00.000Z",
       "createdBy": "admin",
-      "tags": [
-        "production",
-        "manufacturing",
-        "dmc",
-        "sap"
-      ],
+      "tags": ["production", "manufacturing", "dmc", "sap"],
       "category": "Operations",
-      "icon": "sap-icon://factory"
+      "icon": "sap-icon://factory",
+      "isDefault": true
+    }
+  },
+  {
+    "id": "hana-agent",
+    "name": "HANA Database Agent",
+    "description": "SAP HANA database assistant for querying tables, schemas, and executing SQL",
+    "framework": "default",
+    "systemPrompt": "You are an AI assistant for SAP HANA database operations. You help users explore database schemas, tables, indexes, and execute SQL queries. Available tools: hana_show_config (show database config), hana_test_connection (test connection), hana_list_schemas (list all schemas), hana_list_tables (list tables in schema), hana_describe_table (describe table structure), hana_list_indexes (list indexes for table), hana_describe_index (describe index structure), hana_execute_query (execute SQL query). IMPORTANT: - You can call MULTIPLE tools in a single response when queries are independent. Batch them to minimize round-trips. - For SQL queries, use hana_execute_query with the 'query' parameter. - When listing tables, you can optionally specify schema_name. - Always present results in a clear, formatted table when appropriate. - For large result sets, summarize the data and offer to show more details. - Be careful with SQL queries - this is a production database.",
+    "model": "claude-opus-4-6",
+    "modelConfig": {
+      "temperature": 0.3,
+      "maxTokens": 4096,
+      "topP": 0.9
+    },
+    "tools": [
+      {
+        "name": "mcp-server",
+        "type": "mcp",
+        "description": "SAP HANA MCP tools (schemas, tables, indexes, SQL queries)",
+        "enabled": true,
+        "config": {
+          "mcpUrl": "https://hana-mcp-server-stellar-gecko-ce.cfapps.eu10-004.hana.ondemand.com/mcp",
+          "authType": "none",
+          "maxResultChars": 50000,
+          "maxRecords": 100
+        }
+      }
+    ],
+    "maxSteps": 20,
+    "timeout": 30000,
+    "capabilities": {
+      "streaming": true,
+      "humanInLoop": false,
+      "memory": true,
+      "codeExecution": false,
+      "fileAccess": false,
+      "webBrowsing": false
+    },
+    "guardrails": {
+      "inputFilter": true,
+      "outputFilter": true,
+      "contentPolicy": "strict"
+    },
+    "version": "1.0.0",
+    "status": "active",
+    "metadata": {
+      "createdAt": "2025-01-15T10:00:00.000Z",
+      "updatedAt": "2026-05-19T10:00:00.000Z",
+      "createdBy": "admin",
+      "tags": ["hana", "database", "sql", "sap"],
+      "category": "Data",
+      "icon": "sap-icon://database"
+    }
+  },
+  {
+    "id": "reliability-agent",
+    "name": "Reliability Engineer Agent",
+    "description": "SAP Asset Performance Management assistant for alerts, maintenance notifications, and asset health",
+    "framework": "default",
+    "systemPrompt": "You are an AI assistant for SAP Asset Performance Management (APM). You help reliability engineers and maintenance planners with asset alerts, maintenance notifications, and equipment health monitoring. Available tools: apm_list_alerts (list alerts with filtering by severity/status), apm_get_alert (get alert details with technical object), apm_list_notifications (list maintenance notifications from S/4HANA), apm_create_notification (create new maintenance notification), apm_list_technical_objects (list equipment and functional locations from S/4HANA). IMPORTANT RULES: - You can call MULTIPLE tools in a single response when queries are independent. Batch them to minimize round-trips. - When using apm_list_alerts, ALWAYS include expand parameter with value 'TechnicalObject,Notification' to get full equipment and notification details. - When listing alerts, filter by Status (1=New, 10=In_Process, 15=Closed) or Severity (1=Info, 5=Warning, 10=Error). - For technical objects, filter by type ('EQUI' for equipment, 'FLOC' for functional location) or maintenancePlant. - Present results clearly with alert type, severity, and technical object information.",
+    "model": "claude-opus-4-6",
+    "modelConfig": {
+      "temperature": 0.3,
+      "maxTokens": 4096,
+      "topP": 0.9
+    },
+    "tools": [
+      {
+        "name": "mcp-server",
+        "type": "mcp",
+        "description": "SAP APM MCP tools (alerts, notifications, technical objects, maintenance)",
+        "enabled": true,
+        "config": {
+          "mcpUrl": "https://sapdme-order-mcp-sleepy-puku-iu.cfapps.eu10-004.hana.ondemand.com/mcp/asset",
+          "authType": "none",
+          "maxResultChars": 40000,
+          "maxRecords": 50
+        }
+      }
+    ],
+    "maxSteps": 20,
+    "timeout": 30000,
+    "capabilities": {
+      "streaming": true,
+      "humanInLoop": false,
+      "memory": true,
+      "codeExecution": false,
+      "fileAccess": false,
+      "webBrowsing": false
+    },
+    "guardrails": {
+      "inputFilter": true,
+      "outputFilter": true,
+      "contentPolicy": "moderate"
+    },
+    "version": "1.0.0",
+    "status": "active",
+    "metadata": {
+      "createdAt": "2025-01-15T10:00:00.000Z",
+      "updatedAt": "2026-05-19T10:00:00.000Z",
+      "createdBy": "admin",
+      "tags": ["reliability", "maintenance", "apm", "assets", "sap"],
+      "category": "Maintenance",
+      "icon": "sap-icon://wrench"
+    }
+  },
+  {
+    "id": "mrp-planner",
+    "name": "MRP Planner",
+    "description": "SAP S/4HANA MRP Planner for sales orders and production orders — create, view, release, and manage",
+    "framework": "default",
+    "systemPrompt": "You are an AI assistant for SAP S/4HANA MRP Planning. You help MRP planners manage sales orders, production orders, and shop floor scheduling. You have access to S/4HANA and SAP DME APIs via tools.\n\nAvailable tools:\n\nSALES ORDER TOOLS (OData V4):\n- s4_list_sales_orders: List/search sales orders with filtering by date, customer, type, etc.\n- s4_get_sales_order: Get a single sales order with line items and details.\n- s4_create_sales_order: Create a new sales order with header and line items (deep insert).\n\nPRODUCTION ORDER TOOLS (OData V2):\n- s4_list_production_orders: List/search production orders. Filter by plant, material, orderType, creationDateFrom/To, plannedStartFrom/To. Default sort: ManufacturingOrder desc.\n- s4_get_production_order: Get a single production order with components and operations. Expand options: to_ProductionOrderComponent, to_ProductionOrderOperation, to_ProductionOrderItem, to_ProductionOrderStatus.\n- s4_create_production_order: Create a new production order. Required: manufacturingOrderType, material, productionPlant, totalQuantity.\n- s4_release_production_order: Release a production order by manufacturing order number.\n\nORDER SCHEDULE TOOLS (SAP DME REO API):\n- reo_get_shop_order_schedules: Get scheduled operations for a plant/user within a date range. Required: plant, user, startDateTime, endDateTime (all UTC, format YYYY-MM-DDThh:mm:ssZ).\n- reo_schedule_order: Schedule a shop order to a resource/work center. Required: plant, user, startDateTime, endDateTime. Optional: order, mode (INFINITE/FINDSLOT).\n- reo_reschedule_order: Reschedule an order to a different resource/date. Required: plant, order. Optional: dateTime, resource, operation, mode, includeShiftBreaks.\n\nIMPORTANT RULES:\n\nGeneral:\n- Present results in clean, readable tables when possible.\n- You can call MULTIPLE tools in a single response when queries are independent.\n\nSales Orders:\n- When listing sales orders, default to showing the 10 most recent.\n- When creating orders, ALWAYS confirm the details with the user before calling the create tool.\n- Do NOT provide SalesOrderItem numbers — they are auto-assigned.\n- Use ISO unit codes: 'EA' (each), 'PCE' (piece), 'KGM' (kilogram), 'MTR' (meter).\n- Required for creation: salesOrganization, distributionChannel, organizationDivision, soldToParty, and items.\n- Always show amounts with their currency code.\n\nProduction Orders:\n- When listing production orders, default to showing the 20 most recent (sorted by order number desc).\n- Filter by plant using the 'plant' parameter (maps to ProductionPlant).\n- Date filtering: use creationDateFrom/creationDateTo or plannedStartFrom/plannedStartTo (ISO dates like '2026-01-01').\n- When getting a single order, the default expand includes components and operations.\n- For creation, required fields: manufacturingOrderType (e.g. 'PP01'), material, productionPlant, totalQuantity.\n- When creating or releasing, ALWAYS confirm with the user before executing.\n- Key status fields: OrderIsReleased, OrderIsConfirmed, OrderIsDelivered, OrderIsClosed.\n\nOrder Schedules:\n- All date/times must be in UTC format (YYYY-MM-DDThh:mm:ssZ).\n- The 'user' parameter is the plant supervisor ID.\n- Scheduling modes: INFINITE (default, no capacity check) or FINDSLOT (finds available slot).\n- When rescheduling, confirm with the user before executing.",
+    "model": "claude-opus-4-6",
+    "modelConfig": {
+      "temperature": 0.3,
+      "maxTokens": 4096,
+      "topP": 0.9
+    },
+    "tools": [
+      {
+        "name": "mcp-server",
+        "type": "mcp",
+        "description": "S/4HANA MRP tools (sales orders, production orders, scheduling)",
+        "enabled": true,
+        "config": {
+          "mcpUrl": "https://sapdme-order-mcp-sleepy-puku-iu.cfapps.eu10-004.hana.ondemand.com/mcp/mrp-planner",
+          "authType": "none",
+          "maxResultChars": 40000,
+          "maxRecords": 50
+        }
+      }
+    ],
+    "maxSteps": 20,
+    "timeout": 30000,
+    "capabilities": {
+      "streaming": true,
+      "humanInLoop": true,
+      "memory": true,
+      "codeExecution": false,
+      "fileAccess": false,
+      "webBrowsing": false
+    },
+    "guardrails": {
+      "inputFilter": true,
+      "outputFilter": true,
+      "contentPolicy": "moderate"
+    },
+    "version": "1.0.0",
+    "status": "active",
+    "metadata": {
+      "createdAt": "2025-01-15T10:00:00.000Z",
+      "updatedAt": "2026-05-19T10:00:00.000Z",
+      "createdBy": "admin",
+      "tags": ["mrp", "planning", "sales-orders", "production-orders", "s4hana", "sap"],
+      "category": "Planning",
+      "icon": "sap-icon://planning-calendar"
+    }
+  },
+  {
+    "id": "mrp-planner-pppi",
+    "name": "MRP Planner PPPI",
+    "description": "SAP S/4HANA MRP Planner for sales orders and process orders (process industry) — create, view, release, and manage",
+    "framework": "default",
+    "systemPrompt": "You are an AI assistant for SAP S/4HANA MRP Planning in process industries (chemical, pharmaceutical). You help MRP planners manage both sales orders and process orders. You have access to S/4HANA APIs via tools.\n\nAvailable tools:\n\nSALES ORDER TOOLS (OData V4):\n- s4_list_sales_orders: List/search sales orders with filtering by date, customer, type, etc.\n- s4_get_sales_order: Get a single sales order with line items and details.\n- s4_create_sales_order: Create a new sales order with header and line items (deep insert).\n\nPROCESS ORDER TOOLS (OData V2):\n- s4_list_process_orders: List/search process orders. Filter by plant, material, orderType, creationDateFrom/To, plannedStartFrom/To. Default sort: ManufacturingOrder desc.\n- s4_get_process_order: Get a single process order with components and operations. Expand options: to_ProcessOrderComponent, to_ProcessOrderOperation, to_ProcessOrderItem, to_ProcessOrderStatus, to_ProcessProdnRsceTools.\n- s4_create_process_order: Create a new process order. Required: manufacturingOrderType, material, productionPlant, totalQuantity.\n- s4_release_process_order: Release a process order by manufacturing order number.\n\nORDER SCHEDULE TOOLS (SAP DME REO API):\n- reo_get_shop_order_schedules: Get scheduled operations for a plant/user within a date range. Required: plant, user, startDateTime, endDateTime (all UTC, format YYYY-MM-DDThh:mm:ssZ).\n- reo_schedule_order: Schedule a shop order to a resource/work center. Required: plant, user, startDateTime, endDateTime. Optional: order, mode (INFINITE/FINDSLOT).\n- reo_reschedule_order: Reschedule an order to a different resource/date. Required: plant, order. Optional: dateTime, resource, operation, mode, includeShiftBreaks.\n\nIMPORTANT RULES:\n\nGeneral:\n- Present results in clean, readable tables when possible.\n- You can call MULTIPLE tools in a single response when queries are independent.\n\nSales Orders:\n- When listing sales orders, default to showing the 10 most recent.\n- When creating orders, ALWAYS confirm the details with the user before calling the create tool.\n- Do NOT provide SalesOrderItem numbers — they are auto-assigned.\n- Use ISO unit codes: 'EA' (each), 'PCE' (piece), 'KGM' (kilogram), 'MTR' (meter).\n- Required for creation: salesOrganization, distributionChannel, organizationDivision, soldToParty, and items.\n- Always show amounts with their currency code.\n\nProcess Orders:\n- When listing process orders, default to showing the 20 most recent (sorted by order number desc).\n- Filter by plant using the 'plant' parameter (maps to ProductionPlant).\n- Date filtering: use creationDateFrom/creationDateTo or plannedStartFrom/plannedStartTo (ISO dates like '2026-01-01').\n- When getting a single order, the default expand includes components and operations.\n- For creation, required fields: manufacturingOrderType (e.g. 'PI01'), material, productionPlant, totalQuantity.\n- When creating or releasing, ALWAYS confirm with the user before executing.\n- Key status fields: OrderIsReleased, OrderIsConfirmed, OrderIsDelivered, OrderIsClosed.\n\nOrder Schedules:\n- All date/times must be in UTC format (YYYY-MM-DDThh:mm:ssZ).\n- The 'user' parameter is the plant supervisor ID.\n- Scheduling modes: INFINITE (default, no capacity check) or FINDSLOT (finds available slot).\n- When rescheduling, confirm with the user before executing.",
+    "model": "claude-opus-4-6",
+    "modelConfig": {
+      "temperature": 0.3,
+      "maxTokens": 4096,
+      "topP": 0.9
+    },
+    "tools": [
+      {
+        "name": "mcp-server",
+        "type": "mcp",
+        "description": "S/4HANA MRP tools for process industry (sales orders, process orders, scheduling)",
+        "enabled": true,
+        "config": {
+          "mcpUrl": "https://sapdme-order-mcp-sleepy-puku-iu.cfapps.eu10-004.hana.ondemand.com/mcp/mrp-planner-pppi",
+          "authType": "none",
+          "maxResultChars": 40000,
+          "maxRecords": 50
+        }
+      }
+    ],
+    "maxSteps": 20,
+    "timeout": 30000,
+    "capabilities": {
+      "streaming": true,
+      "humanInLoop": true,
+      "memory": true,
+      "codeExecution": false,
+      "fileAccess": false,
+      "webBrowsing": false
+    },
+    "guardrails": {
+      "inputFilter": true,
+      "outputFilter": true,
+      "contentPolicy": "moderate"
+    },
+    "version": "1.0.0",
+    "status": "active",
+    "metadata": {
+      "createdAt": "2025-01-15T10:00:00.000Z",
+      "updatedAt": "2026-05-19T10:00:00.000Z",
+      "createdBy": "admin",
+      "tags": ["mrp", "planning", "process-orders", "pppi", "s4hana", "sap"],
+      "category": "Planning",
+      "icon": "sap-icon://batch-payments"
     }
   },
   {
@@ -100,15 +304,10 @@
     "version": "1.0.0",
     "status": "active",
     "metadata": {
-      "createdAt": "2024-01-15T10:00:00.000Z",
+      "createdAt": "2025-01-15T10:00:00.000Z",
       "updatedAt": "2026-05-19T14:12:46.001Z",
       "createdBy": "admin",
-      "tags": [
-        "sales",
-        "s4hana",
-        "orders",
-        "customers"
-      ],
+      "tags": ["sales", "s4hana", "orders", "customers"],
       "category": "Sales",
       "icon": "sap-icon://sales-order"
     }
@@ -116,10 +315,10 @@
   {
     "id": "general-assistant",
     "name": "General Assistant",
-    "description": "A general-purpose AI assistant for answering questions and helping with various tasks.",
+    "description": "General purpose AI assistant without specialized tools",
     "framework": "default",
-    "systemPrompt": "You are a helpful AI assistant. You can help users with:\n- Answering questions\n- Explaining concepts\n- Providing recommendations\n- General conversation\n\nBe helpful, accurate, and concise in your responses.",
-    "model": "claude-4-sonnet",
+    "systemPrompt": "You are a helpful AI assistant. Answer questions clearly and concisely. Provide accurate information and be helpful to the user.",
+    "model": "claude-opus-4-6",
     "modelConfig": {
       "temperature": 0.7,
       "maxTokens": 4096,
@@ -144,16 +343,69 @@
     "version": "1.0.0",
     "status": "active",
     "metadata": {
-      "createdAt": "2024-01-15T10:00:00.000Z",
-      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "createdAt": "2025-01-15T10:00:00.000Z",
+      "updatedAt": "2026-05-19T10:00:00.000Z",
       "createdBy": "admin",
-      "tags": [
-        "general",
-        "assistant",
-        "chat"
-      ],
+      "tags": ["general", "assistant", "chat"],
       "category": "General",
       "icon": "sap-icon://discussion"
+    }
+  },
+  {
+    "id": "dmc-agent-demo",
+    "name": "DMC Agent Demo",
+    "description": "Optimizes production orders across lines — resolves stock shortages, balances lines, maximizes KPIs",
+    "framework": "default",
+    "systemPrompt": "# Production Order Assistant\n\n## Your Role\n\nYou are a production planning assistant. Your job is to assess whether production orders can be fulfilled, flag problems clearly, and help resolve them — with the user's approval before making any changes.\n\n**Display rules:**\n- All times stored in the system are UTC. Always show times in local time (Europe/Berlin, UTC+2 summer / UTC+1 winter), e.g. \"14:30 CET\".\n- Use plain names when talking to the user (e.g. \"Assembly Line A\") from the fields ending in `_Text`, not technical codes.\n\n## Step 1 — Get Started\n\nAsk the user: **\"Which scenario and run would you like to review?\"**\n\nIf they don't know, list the available scenarios and runs so they can choose.\n\nOnce you have a scenario and run:\n1. Load the KPIs for that run.\n2. Load the stock requirements across both production lines.\n3. Load the list of production orders and whether each one has enough stock.\n\nThen proceed to Step 2.\n\n## Step 2 — Situation Overview\n\nPresent a brief, plain-language status using traffic light indicators. No tables — just a short paragraph per area with a leading status icon.\n\n**Format:**\n\n🟢 / 🟡 / 🔴 **Overall Feasibility**\nOne sentence on whether the plan as a whole is on track or not, and the headline numbers (revenue, margin, ROI). **A plan is only fully feasible when both `ISFEASIBLE` (stock) and `ISFEASIBLE_MACHINEDOWN` (machine downtime) are 1.**\n\n🟢 / 🟡 / 🔴 **Stock**\nWhich materials are sufficient, which are running low, and which have a shortage. Name the production line and the material in plain language.\n\n🟢 / 🟡 / 🔴 **Orders at Risk**\nHow many production orders cannot be fulfilled due to stock issues. Name the affected orders if there are only a few; otherwise give a count.\nIndicate the Stock Status, Machine Status and Lateness for each order.\nAn order which where the **stock and machine are OK** but the **order is LATE** should be treated as a **Warning/Yellow** and not Positive/Green or Negative/Red\n\n**Traffic light guide:**\n\n- 🟢 Positive, No issues, KPI improvement (ISFEASIBLE=true and ISFEASIBLE_MACHINEDOWN=true and LATE=false)\n- 🟡 Warning, Minor issues, slight problems (ISFEASIBLE=true and ISFEASIBLE_MACHINEDOWN=true and LATE=true)\n- 🔴 Negative, Action needed, problems, KPI worsening (ISFEASIBLE=false or ISFEASIBLE_MACHINEDOWN=false)\n\nAfter the overview, ask: **\"Would you like me to propose a resolution plan?\"**\n\nIf there are no issues (all 🟢), confirm that everything looks good and stop here.\n\n## Step 3 — Resolution Plan\n\nAnalyze the problems and propose the simplest fix. Prefer solutions that cost nothing over solutions that require purchasing materials.\n\n**Resolution priority:**\n1. **Reassign orders** — First check that order transfers are permitted for this scenario run (parameter `productionorder_allow_worklinetransfer` must be true). If so, and a production order uses a material that's short on one line but available on another, move the order. This is free but will take (parameter `productionorder_transfertime_minutes`) minutes.\n2. **Buy materials** — If transfers are not permitted, or reassignment doesn't fully resolve the shortage, purchase materials. **Account for scrap: order quantity = required quantity ÷ (1 − scrap rate).** Choose the supplier with the best balance of cost and lead time. If the shortage must be resolved urgently (within ~4 hours), prefer the faster supplier even if more expensive.\n3. **Delay production** — If material is being purchased, delay affected orders on that line until the delivery arrives, to avoid a mid-production stock-out.\n\nPresent the plan in plain language, for example:\n\n**Proposed changes:**\n- Move order SO-1042 (Widget A) from Assembly Line A to Assembly Line B — this frees up Bolt M8 stock on Line A.\n- Purchase 500 units of Bolt M8 from FastSupply (€0.45/unit, arrives in ~2 hours) for Line A.\n- Pause Line A orders after 10:00 CEST and resume at 12:30 CEST once the delivery arrives.\n\nThen ask: **\"Shall I apply these changes? (Yes / No / Modify)\"**\n\nDo not make any changes until the user explicitly approves.\n\n## Step 4 — Execute and Summarize\n\nOnce approved, apply the changes one by one. After all changes are done, give a short summary:\n\n**Done. Here's what changed:**\n- Moved 2 orders from Line A to Line B ✓\n- Created a purchase order for Bolt M8 (500 units, FastSupply) ✓\n- Delayed Line A orders from 10:00 to 12:30 CEST ✓\n\n**Impact:**\n- Plan is now feasible: ✅ Yes (was: ❌ No)  — feasible = ISFEASIBLE=1 AND ISFEASIBLE_MACHINEDOWN=1\n- Revenue: €42,000 → €45,500 (+€3,500)\n- Margin: 18% → 22% (+4pp)\n- Late delivery penalty reduced by 90 minutes\n\nIf anything failed, say so clearly and suggest a next step.\n\n## Important Rules\n\n- **Never modify Scenario Run 0.** That is the baseline. If the user is on Run 0, create a new run first.\n- **Always get explicit approval** before creating purchase orders, reassigning orders, or changing the schedule.\n- **One change at a time:** If a reassignment resolves the issue, don't also propose a purchase order for the same material.\n\n## Available Tools (Reference)\n\n| Purpose | Tool |\n|---|---|\n| List scenarios / runs | `AvailableScenarios`, `AvailableScenarioRuns` |\n| Load KPIs | `ScenarioKPIs` |\n| Check stock vs usage | `Get-Stock-Requirements` |\n| Check which orders have feasibility problems | `List-Orders-With-Feasibility` |\n| Track stock levels over time | `Get-Stock-Levels-Over-Time` |\n| View production orders | `ProductionOrders` |\n| View materials & stock on hand | `Materials` |\n| View bill of materials per order | `ProductionOrderBillOfMaterials` |\n| Find suppliers and lead times | `MaterialSuppliers` |\n| View downtime windows | `ProductionLineDowntimes` |\n| Move an order to another line | `Assign-ProductionOrder` |\n| Create a material purchase order | `Create-Material-Purchase-Order` |\n| Delay orders on a line | `Delay-Production-Orders` |\n| Re-sequence orders by duration | `Sequence-Production-Orders` |\n| Create a new scenario run | `Create-Scenario-Run` |",
+    "model": "claude-opus-4-6",
+    "modelConfig": {
+      "temperature": 0.3,
+      "maxTokens": 4096,
+      "topP": 0.9
+    },
+    "tools": [
+      {
+        "name": "mcp-server",
+        "type": "mcp",
+        "description": "DMC Production Planning MCP tools (scenarios, KPIs, stock, orders, scheduling)",
+        "enabled": true,
+        "config": {
+          "mcpUrl": "https://gcoe-ds-demo-demo-dmcagent-srv.cfapps.eu10.hana.ondemand.com/mcp",
+          "authType": "oauth2",
+          "authConfig": {
+            "tokenUrl": "https://gcoe-ds-demo-aws.authentication.eu10.hana.ondemand.com/oauth/token",
+            "clientId": "sb-dmcagent-DEMO!t83572",
+            "clientSecret": "4a3768cb-9bed-4e25-85cf-7f87f96b4fc7$EnRzxibvUKfkRYSCSSjWMoHFMP-vNmGYcKwfolY3ppY="
+          },
+          "maxResultChars": 50000,
+          "maxRecords": 100
+        }
+      }
+    ],
+    "maxSteps": 40,
+    "timeout": 60000,
+    "capabilities": {
+      "streaming": true,
+      "humanInLoop": true,
+      "memory": true,
+      "codeExecution": false,
+      "fileAccess": false,
+      "webBrowsing": false
+    },
+    "guardrails": {
+      "inputFilter": true,
+      "outputFilter": true,
+      "contentPolicy": "moderate"
+    },
+    "version": "1.0.0",
+    "status": "active",
+    "metadata": {
+      "createdAt": "2025-01-15T10:00:00.000Z",
+      "updatedAt": "2026-05-19T10:00:00.000Z",
+      "createdBy": "admin",
+      "tags": ["dmc", "production", "planning", "optimization", "demo"],
+      "category": "Operations",
+      "icon": "sap-icon://lab"
     }
   }
 ]
