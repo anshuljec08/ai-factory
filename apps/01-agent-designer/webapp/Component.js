@@ -66,8 +66,15 @@ sap.ui.define([
 
         /**
          * Get the API base URL
+         * In local development, use the full URL to the API server
+         * In production (BTP), use relative path through approuter
          */
         getApiBaseUrl: function () {
+            // Check if running locally (UI5 serve on port 8080)
+            if (window.location.port === "8080") {
+                return "http://localhost:3001/api/v1";
+            }
+            // Production: use relative path through approuter
             return "/api/v1";
         },
 

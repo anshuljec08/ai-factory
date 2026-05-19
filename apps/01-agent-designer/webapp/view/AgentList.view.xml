@@ -39,9 +39,10 @@
                     change="onFilterChange"
                     selectedKey="">
                     <core:Item key="" text="All Frameworks"/>
-                    <items>
-                        {/frameworks}
-                    </items>
+                    <core:Item key="mcp" text="MCP"/>
+                    <core:Item key="langgraph" text="LangGraph"/>
+                    <core:Item key="maf" text="MAF"/>
+                    <core:Item key="crewai" text="CrewAI"/>
                 </Select>
                 <Select
                     id="statusFilter"
