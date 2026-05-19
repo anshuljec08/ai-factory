@@ -1,0 +1,98 @@
+_schema-version: "3.2"
+ID: ai-factory
+version: 1.0.0
+description: AI Factory - Platform for creating and managing AI agents
+
+parameters:
+  enable-parallel-deployments: true
+
+modules:
+  # Agent Registry API (Node.js)
+  - name: ai-factory-agent-registry
+    type: nodejs
+    path: services/agent-registry
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+      disk-quota: 512M
+    build-parameters:
+      builder: npm
+    provides:
+      - name: agent-registry-api
+        properties:
+          url: ${default-url}
+
+  # Agent Designer UI (UI5)
+  - name: ai-factory-agent-designer
+    type: html5
+    path: apps/01-agent-designer
+    build-parameters:
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+      supported-platforms: []
+
+  # App Router
+  - name: ai-factory-approuter
+    type: approuter.nodejs
+    path: approuter
+    parameters:
+      memory: 128M
+      disk-quota: 256M
+    requires:
+      - name: ai-factory-html5-repo-runtime
+      - name: ai-factory-destination
+      - name: agent-registry-api
+        group: destinations
+        properties:
+          name: agent-registry
+          url: ~{url}
+          forwardAuthToken: true
+
+  # HTML5 App Deployer
+  - name: ai-factory-html5-deployer
+    type: com.sap.html5.application-content
+    path: .
+    requires:
+      - name: ai-factory-html5-repo-host
+    build-parameters:
+      requires:
+        - name: ai-factory-agent-designer
+          artifacts:
+            - dist/*
+          target-path: resources/agent-designer
+
+resources:
+  # HTML5 Repository Runtime
+  - name: ai-factory-html5-repo-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
+
+  # HTML5 Repository Host
+  - name: ai-factory-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+
+  # Destination Service
+  - name: ai-factory-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        init_data:
+          instance:
+            existing_destinations_policy: update
+            destinations:
+              - Name: agent-registry
+                Type: HTTP
+                URL: ~{agent-registry-api/url}
+                Authentication: NoAuthentication
+                ProxyType: Internet
+                HTML5.DynamicDestination: true
+                HTML5.ForwardAuthToken: true
