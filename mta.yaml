@@ -5,6 +5,10 @@ description: AI Factory - Platform for creating and managing AI agents
 
 parameters:
   enable-parallel-deployments: true
+  deploy_mode: html5-repo
+
+build-parameters:
+  before-all: []
 
 modules:
   # Agent Registry API (Node.js)
@@ -21,15 +25,30 @@ modules:
       - name: agent-registry-api
         properties:
           url: ${default-url}
+    requires:
+      - name: ai-factory-auth
 
   # Agent Designer UI (UI5)
   - name: ai-factory-agent-designer
     type: html5
     path: apps/01-agent-designer
     build-parameters:
+      build-result: dist
       builder: custom
       commands:
-        - npm install
+        - npm ci
+        - npm run build
+      supported-platforms: []
+
+  # Launchpad UI (UI5)
+  - name: ai-factory-launchpad
+    type: html5
+    path: launchpad
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm ci
         - npm run build
       supported-platforms: []
 
@@ -41,6 +60,7 @@ modules:
       memory: 128M
       disk-quota: 256M
     requires:
+      - name: ai-factory-auth
       - name: ai-factory-html5-repo-runtime
       - name: ai-factory-destination
       - name: agent-registry-api
@@ -52,18 +72,94 @@ modules:
 
   # HTML5 App Deployer
   - name: ai-factory-html5-deployer
-    type: com.sap.html5.application-content
+    type: com.sap.application.content
     path: .
     requires:
       - name: ai-factory-html5-repo-host
+        parameters:
+          content-target: true
     build-parameters:
+      build-result: resources
       requires:
         - name: ai-factory-agent-designer
           artifacts:
             - dist/*
           target-path: resources/agent-designer
+        - name: ai-factory-launchpad
+          artifacts:
+            - dist/*
+          target-path: resources/launchpad
+
+  # Destination Content Deployer
+  - name: ai-factory-dest-deployer
+    type: com.sap.application.content
+    requires:
+      - name: agent-registry-api
+      - name: ai-factory-html5-repo-host
+        parameters:
+          service-key:
+            name: ai-factory-html5-repo-host-key
+      - name: ai-factory-destination
+        parameters:
+          content-target: true
+      - name: ai-factory-auth
+        parameters:
+          service-key:
+            name: ai-factory-auth-key
+    build-parameters:
+      no-source: true
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            - Name: ai-factory-html5-repo-host
+              ServiceInstanceName: ai-factory-html5-repo-host
+              ServiceKeyName: ai-factory-html5-repo-host-key
+              sap.cloud.service: ai.factory
+            - Name: ai-factory-auth
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: ai-factory-auth
+              ServiceKeyName: ai-factory-auth-key
+              sap.cloud.service: ai.factory
 
 resources:
+  # XSUAA Authentication
+  - name: ai-factory-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      config:
+        xsappname: ai-factory-${space}
+        tenant-mode: dedicated
+        scopes:
+          - name: $XSAPPNAME.admin
+            description: Admin access
+          - name: $XSAPPNAME.user
+            description: User access
+        role-templates:
+          - name: Admin
+            description: Administrator
+            scope-references:
+              - $XSAPPNAME.admin
+              - $XSAPPNAME.user
+          - name: User
+            description: Regular User
+            scope-references:
+              - $XSAPPNAME.user
+        role-collections:
+          - name: AI Factory Admin
+            description: AI Factory Administrator
+            role-template-references:
+              - $XSAPPNAME.Admin
+          - name: AI Factory User
+            description: AI Factory User
+            role-template-references:
+              - $XSAPPNAME.User
+      service-keys:
+        - name: ai-factory-auth-key
+
   # HTML5 Repository Runtime
   - name: ai-factory-html5-repo-runtime
     type: org.cloudfoundry.managed-service
@@ -77,14 +173,19 @@ resources:
     parameters:
       service: html5-apps-repo
       service-plan: app-host
+      service-keys:
+        - name: ai-factory-html5-repo-host-key
 
   # Destination Service
   - name: ai-factory-destination
     type: org.cloudfoundry.managed-service
+    requires:
+      - name: agent-registry-api
     parameters:
       service: destination
       service-plan: lite
       config:
+        HTML5Runtime_enabled: true
         init_data:
           instance:
             existing_destinations_policy: update
@@ -96,3 +197,8 @@ resources:
                 ProxyType: Internet
                 HTML5.DynamicDestination: true
                 HTML5.ForwardAuthToken: true
+              - Name: ui5
+                Type: HTTP
+                URL: https://ui5.sap.com
+                Authentication: NoAuthentication
+                ProxyType: Internet
