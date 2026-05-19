@@ -24,6 +24,18 @@
 
 ## Week 1: Project Setup & Core Apps
 
+### 🚀 NEW: Weekly Deployment Pattern
+
+**Every week ends with a Deployment Day:**
+- Build MTA archive
+- Deploy to BTP (dev space)
+- Verify all components work
+- Add new tiles to launchpad
+
+This ensures you can test the full deployment every week!
+
+---
+
 ### Day 1: Project Structure
 **Focus:** Create the foundation
 
@@ -228,25 +240,38 @@ apps/01-agent-designer/
 
 ---
 
-### Day 7: Agent Designer - Polish & JSON Preview
-**Focus:** Add finishing touches
+### Day 7: 🚀 Launchpad & Weekly Deployment (Week 1)
+**Focus:** Create launchpad and deploy to BTP
 
 | # | Task | AI/You | Time | Status |
 |---|------|--------|------|--------|
-| 7.1 | Add JSON Preview panel | AI | 20 min | ☐ |
-| 7.2 | Add Delete confirmation dialog | AI | 15 min | ☐ |
-| 7.3 | Add Duplicate agent feature | AI | 20 min | ☐ |
-| 7.4 | Add form validation | AI | 20 min | ☐ |
-| 7.5 | Add loading indicators | AI | 15 min | ☐ |
-| 7.6 | Add error handling | AI | 15 min | ☐ |
-| 7.7 | Style improvements | AI | 20 min | ☐ |
-| 7.8 | Full end-to-end testing | You | 30 min | ☐ |
+| 7.1 | Create `launchpad/webapp/` structure | AI | 10 min | ☐ |
+| 7.2 | Create `launchpad/webapp/index.html` | AI | 20 min | ☐ |
+| 7.3 | Create `launchpad/webapp/manifest.json` | AI | 15 min | ☐ |
+| 7.4 | Create `launchpad/webapp/Component.js` | AI | 15 min | ☐ |
+| 7.5 | Add Agent Designer tile | AI | 10 min | ☐ |
+| 7.6 | Create weekly deployment scripts | AI | 20 min | ☐ |
+| 7.7 | Update `mta.yaml` for full deployment | AI | 15 min | ☐ |
+| 7.8 | Build MTA archive (`mbt build`) | You | 10 min | ☐ |
+| 7.9 | Deploy to BTP (`cf deploy`) | You | 15 min | ☐ |
+| 7.10 | Verify tiles in Fiori Launchpad | You | 20 min | ☐ |
 
-**Deliverable:** Complete Agent Designer MVP
-- CRUD operations working
-- JSON preview
-- Form validation
-- Error handling
+**Deliverable:** Week 1 Deployment
+- Launchpad with Agent Designer tile
+- Full MTA deployed to BTP
+- Accessible via approuter URL
+
+**Weekly Deployment Checklist:**
+```
+□ All local tests passing
+□ MTA build successful
+□ Deploy to BTP successful
+□ API health check passing
+□ UI accessible via approuter
+□ Tiles visible in launchpad
+□ Navigation working
+□ Commit and push to GitHub
+```
 
 ---
 
@@ -543,13 +568,13 @@ curl -X DELETE http://localhost:3001/api/v1/agents/test-agent
 ## Progress Tracker
 
 ### Week 1
-- [ ] Day 1: Project Structure
-- [ ] Day 2: Agent Schema
-- [ ] Day 3: Agent Registry Service
-- [ ] Day 4: Agent Designer Setup
-- [ ] Day 5: Agent Designer List View
-- [ ] Day 6: Agent Designer Detail View
-- [ ] Day 7: Agent Designer Polish
+- [x] Day 1: Project Structure ✅
+- [x] Day 2: Agent Schema ✅
+- [x] Day 3: Agent Registry Service ✅
+- [x] Day 4: Agent Designer Setup ✅
+- [x] Day 5: Agent Designer List View ✅
+- [x] Day 6: Agent Designer Detail View + BTP Config ✅
+- [ ] Day 7: 🚀 Launchpad & Weekly Deployment (Week 1)
 
 ### Week 2
 - [ ] Day 8: Custom UI Setup
@@ -557,13 +582,14 @@ curl -X DELETE http://localhost:3001/api/v1/agents/test-agent
 - [ ] Day 10: Custom UI Agent Selection
 - [ ] Day 11: MCP Builder Setup
 - [ ] Day 12: MCP Builder Tool Discovery
-- [ ] Day 13: Fiori Launchpad
-- [ ] Day 14: Integration & Testing
+- [ ] Day 13: Add Custom UI & MCP Builder tiles
+- [ ] Day 14: 🚀 Weekly Deployment (Week 2)
 
 ### Week 3 (Optional)
 - [ ] Day 15-17: Enhancements
 - [ ] Day 18-19: Documentation
 - [ ] Day 20: Phase 1 Complete
+- [ ] Day 21: 🚀 Final Deployment (Week 3)
 
 ---
 
