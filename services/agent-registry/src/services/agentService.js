@@ -12,8 +12,8 @@ const addFormats = require('ajv-formats');
 // Data file path
 const DATA_FILE = path.join(__dirname, '../data/agents.json');
 
-// Load agent schema
-const agentSchema = require('../../../../shared/agent-schema/agent.schema.json');
+// Load agent schema (local copy for standalone deployment)
+const agentSchema = require('../schema/agent.schema.json');
 
 // Initialize AJV validator
 const ajv = new Ajv({ allErrors: true, strict: false, useDefaults: true });
