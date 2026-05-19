@@ -64,17 +64,17 @@ deploy_api() {
 
 # Build and deploy UI
 deploy_ui() {
-    log_info "Building Agent Designer UI..."
-    cd "$PROJECT_ROOT/apps/01-agent-designer"
-    
+    log_info "Building AI Factory UI..."
+    cd "$PROJECT_ROOT/apps/ai-factory"
+
     # Install dependencies
     log_info "Installing dependencies..."
     npm install
-    
+
     # Build the UI
     log_info "Building UI5 application..."
     npm run build
-    
+
     log_info "UI built successfully. Deploy using MTA or manually."
     cd "$PROJECT_ROOT"
 }

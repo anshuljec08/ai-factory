@@ -375,7 +375,7 @@ curl -X DELETE http://localhost:3001/api/v1/agents/test-agent
 - [x] Day 6-7: Placeholder Views + Deployment Config ✅
 
 ### Week 2 ⏳ IN PROGRESS
-- [ ] Day 8: Custom UI (Chat) Setup
+- [x] Day 8: Custom UI (Chat) Setup ✅
 - [ ] Day 9: Port Services
 - [ ] Day 10: Agent Selection
 - [ ] Day 11: MCP Builder

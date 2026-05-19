@@ -1,9 +1,0 @@
-<mvc:View
-    controllerName="ai.factory.agentdesigner.controller.App"
-    xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m"
-    displayBlock="true">
-    <App id="app" busy="{/isLoading}" busyIndicatorDelay="0">
-        <!-- Pages will be added by router -->
-    </App>
-</mvc:View>

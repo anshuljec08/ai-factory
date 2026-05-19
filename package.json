@@ -6,16 +6,12 @@
   "workspaces": [
     "apps/*",
     "services/*",
-    "shared/*",
-    "launchpad"
+    "shared/*"
   ],
   "scripts": {
     "start:registry": "cd services/agent-registry && npm start",
-    "start:designer": "cd apps/01-agent-designer && npm start",
-    "start:custom-ui": "cd apps/05-custom-ui && npm start",
-    "start:mcp-builder": "cd apps/02-mcp-builder && npm start",
-    "start:launchpad": "cd launchpad && npm start",
-    "start:all": "concurrently \"npm run start:registry\" \"npm run start:launchpad\"",
+    "start:ui": "cd apps/ai-factory && npx ui5 serve --port 8080",
+    "start:all": "concurrently \"npm run start:registry\" \"npm run start:ui\"",
     "install:all": "npm install && cd services/agent-registry && npm install",
     "lint": "eslint .",
     "test": "echo \"No tests yet\""

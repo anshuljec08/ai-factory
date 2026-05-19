@@ -82,27 +82,17 @@ build_ui() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${YELLOW}Building UI Applications...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    
-    # Build Agent Designer
-    if [ -d "apps/01-agent-designer" ]; then
-        echo -e "${YELLOW}Building Agent Designer...${NC}"
-        cd apps/01-agent-designer
+
+    # Build AI Factory unified app
+    if [ -d "apps/ai-factory" ]; then
+        echo -e "${YELLOW}Building AI Factory app...${NC}"
+        cd apps/ai-factory
         npm install
         npm run build 2>/dev/null || echo "Build script not configured, skipping..."
         cd ../..
-        echo -e "${GREEN}✓ Agent Designer built${NC}"
+        echo -e "${GREEN}✓ AI Factory app built${NC}"
     fi
-    
-    # Build Launchpad
-    if [ -d "launchpad" ]; then
-        echo -e "${YELLOW}Building Launchpad...${NC}"
-        cd launchpad
-        npm install
-        npm run build 2>/dev/null || echo "Build script not configured, skipping..."
-        cd ..
-        echo -e "${GREEN}✓ Launchpad built${NC}"
-    fi
-    
+
     echo ""
 }
 
