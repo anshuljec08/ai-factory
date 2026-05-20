@@ -4,30 +4,133 @@ sap.ui.define([
 ], function (Constants, ToolSchemaAdapter) {
     "use strict";
 
-    /**
-     * McpClient
-     * 
-     * Handles all MCP (Model Context Protocol) proxy communication.
-     * Supports single and batch tool calls with timeout handling.
-     */
     var McpClient = {
+
+        _oToolServerMap: {},
+        _aAllTools: [],
+
+        /**
+         * Load tools from multiple MCP server configs and build routing map.
+         * DEVIATION: Inline routing map; replaces with centralized ToolRegistry service (Week 8+) — see docs/phase1-deviations.md
+         * @param {Array} aToolConfigs - Array of { name, config: { mcpUrl, authType, authConfig, maxResultChars, maxRecords } }
+         * @returns {Promise<Array>} Resolves with merged tools array in internal format
+         */
+        loadAllTools: function (aToolConfigs) {
+            var that = this;
+
+            if (!aToolConfigs || aToolConfigs.length === 0) {
+                this._oToolServerMap = {};
+                this._aAllTools = [];
+                return Promise.resolve([]);
+            }
+
+            var aPromises = aToolConfigs.map(function (oToolConfig) {
+                return that._loadToolsFromServer(oToolConfig).catch(function (sError) {
+                    console.warn("[McpClient] Failed to load tools from", oToolConfig.config.mcpUrl, ":", sError);
+                    return [];
+                });
+            });
+
+            return Promise.all(aPromises).then(function (aResults) {
+                var aMergedTools = [];
+                that._oToolServerMap = {};
+
+                aResults.forEach(function (aTools, iIdx) {
+                    var oConfig = aToolConfigs[iIdx];
+                    aTools.forEach(function (oTool) {
+                        that._oToolServerMap[oTool.name] = oConfig.config;
+                        aMergedTools.push(oTool);
+                    });
+                });
+
+                that._aAllTools = aMergedTools;
+                console.log("[McpClient] Loaded " + aMergedTools.length + " tools from " + aToolConfigs.length + " MCP server(s)");
+                return aMergedTools;
+            });
+        },
+
+        /**
+         * Get the MCP config that owns a given tool.
+         * @param {string} sToolName
+         * @returns {Object|null} MCP config { mcpUrl, authType, authConfig, maxResultChars, maxRecords }
+         */
+        getConfigForTool: function (sToolName) {
+            return this._oToolServerMap[sToolName] || null;
+        },
+
+        /**
+         * Get all loaded tools.
+         * @returns {Array}
+         */
+        getAllTools: function () {
+            return this._aAllTools;
+        },
+
+        /**
+         * Load tools from a single MCP server.
+         * @param {Object} oToolConfig - { name, config: { mcpUrl, authType, authConfig } }
+         * @returns {Promise<Array>}
+         * @private
+         */
+        _loadToolsFromServer: function (oToolConfig) {
+            var oMcpConfig = oToolConfig.config;
+
+            if (!oMcpConfig || !oMcpConfig.mcpUrl) {
+                return Promise.resolve([]);
+            }
+
+            return this.callProxy(oMcpConfig, {
+                jsonrpc: "2.0",
+                id: 1,
+                method: "tools/list",
+                params: {}
+            }).then(function (oResponse) {
+                if (oResponse && oResponse.result && oResponse.result.tools) {
+                    return oResponse.result.tools.map(function (tool) {
+                        return {
+                            name: tool.name,
+                            description: tool.description,
+                            input_schema: tool.inputSchema
+                        };
+                    });
+                }
+                return [];
+            });
+        },
 
         /**
          * Call a single MCP tool via the proxy.
-         * 
-         * @param {Object} oAgent - Agent configuration with mcpUrl, authType, authConfig, toolTimeout
-         * @param {Object} oJsonRpc - JSON-RPC request object
-         * @returns {Promise} Resolves with MCP response, rejects with error message
+         * @param {Object} oMcpConfig - { mcpUrl, authType, authConfig } or full agent with those fields
+         * @param {string} sToolName - Name of the tool to call
+         * @param {Object} oArgs - Tool arguments
+         * @returns {Promise<string>} Resolves with tool result text
          */
-        callProxy: function (oAgent, oJsonRpc) {
+        callTool: function (oMcpConfig, sToolName, oArgs) {
+            return this.callProxy(oMcpConfig, {
+                jsonrpc: "2.0",
+                id: Date.now(),
+                method: "tools/call",
+                params: { name: sToolName, arguments: oArgs }
+            }).then(function (oResponse) {
+                return ToolSchemaAdapter.extractToolResultText(oResponse);
+            });
+        },
+
+        /**
+         * Call the MCP proxy endpoint.
+         * @param {Object} oMcpConfig - { mcpUrl, authType, authConfig }
+         * @param {Object} oJsonRpc - JSON-RPC request object
+         * @returns {Promise}
+         */
+        callProxy: function (oMcpConfig, oJsonRpc) {
             var sProxyUrl = Constants.MCP_PROXY_URL;
             var oAuthConfig = null;
 
-            if (oAgent.authType === "oauth2" && oAgent.authConfig) {
-                oAuthConfig = oAgent.authConfig;
+            if (oMcpConfig.authType === "oauth2" && oMcpConfig.authConfig) {
+                oAuthConfig = oMcpConfig.authConfig;
             }
 
-            var iTimeout = (oAgent.toolTimeout || 30) * 1000;
+            var iTimeout = (oMcpConfig.toolTimeout || 30) * 1000;
 
             return new Promise(function (resolve, reject) {
                 jQuery.ajax({
@@ -37,7 +140,7 @@ sap.ui.define([
                     dataType: "json",
                     timeout: iTimeout,
                     data: JSON.stringify({
-                        mcpUrl: oAgent.mcpUrl,
+                        mcpUrl: oMcpConfig.mcpUrl,
                         authConfig: oAuthConfig,
                         jsonrpc: oJsonRpc,
                         timeoutMs: iTimeout
@@ -59,21 +162,20 @@ sap.ui.define([
         },
 
         /**
-         * Call multiple MCP tools in a single batch request.
-         * 
-         * @param {Object} oAgent - Agent configuration
+         * Call multiple MCP tools in a batch (must all belong to same server).
+         * @param {Object} oMcpConfig - { mcpUrl, authType, authConfig }
          * @param {Array} aJsonRpcRequests - Array of JSON-RPC request objects
-         * @returns {Promise} Resolves with array of responses, rejects with error message
+         * @returns {Promise<Array>}
          */
-        callBatchProxy: function (oAgent, aJsonRpcRequests) {
+        callBatchProxy: function (oMcpConfig, aJsonRpcRequests) {
             var sBatchUrl = Constants.MCP_BATCH_PROXY_URL;
             var oAuthConfig = null;
 
-            if (oAgent.authType === "oauth2" && oAgent.authConfig) {
-                oAuthConfig = oAgent.authConfig;
+            if (oMcpConfig.authType === "oauth2" && oMcpConfig.authConfig) {
+                oAuthConfig = oMcpConfig.authConfig;
             }
 
-            var iSingleTimeout = (oAgent.toolTimeout || 30) * 1000;
+            var iSingleTimeout = (oMcpConfig.toolTimeout || 30) * 1000;
             var iTimeout = Math.round(iSingleTimeout * 1.5);
 
             return new Promise(function (resolve, reject) {
@@ -84,7 +186,7 @@ sap.ui.define([
                     dataType: "json",
                     timeout: iTimeout,
                     data: JSON.stringify({
-                        mcpUrl: oAgent.mcpUrl,
+                        mcpUrl: oMcpConfig.mcpUrl,
                         authConfig: oAuthConfig,
                         requests: aJsonRpcRequests
                     }),
@@ -109,63 +211,11 @@ sap.ui.define([
         },
 
         /**
-         * Load tools list from an MCP server.
-         * 
-         * @param {Object} oAgent - Agent configuration with mcpUrl
-         * @returns {Promise} Resolves with array of tools in internal format
-         */
-        loadTools: function (oAgent) {
-            var that = this;
-
-            if (!oAgent || !oAgent.mcpUrl) {
-                return Promise.resolve([]);
-            }
-
-            return this.callProxy(oAgent, {
-                jsonrpc: "2.0",
-                id: 1,
-                method: "tools/list",
-                params: {}
-            }).then(function (oResponse) {
-                if (oResponse && oResponse.result && oResponse.result.tools) {
-                    return oResponse.result.tools.map(function (tool) {
-                        return {
-                            name: tool.name,
-                            description: tool.description,
-                            input_schema: tool.inputSchema
-                        };
-                    });
-                }
-                return [];
-            });
-        },
-
-        /**
-         * Call a single MCP tool and extract the text result.
-         * 
-         * @param {Object} oAgent - Agent configuration
-         * @param {string} sToolName - Name of the tool to call
-         * @param {Object} oArgs - Tool arguments
-         * @returns {Promise<string>} Resolves with tool result text
-         */
-        callTool: function (oAgent, sToolName, oArgs) {
-            return this.callProxy(oAgent, {
-                jsonrpc: "2.0",
-                id: Date.now(),
-                method: "tools/call",
-                params: { name: sToolName, arguments: oArgs }
-            }).then(function (oResponse) {
-                return ToolSchemaAdapter.extractToolResultText(oResponse);
-            });
-        },
-
-        /**
          * Build a JSON-RPC request for a tool call.
-         * 
-         * @param {string} sToolName - Tool name
-         * @param {Object} oArgs - Tool arguments
-         * @param {number} [iIndex] - Optional index for batch requests
-         * @returns {Object} JSON-RPC request object
+         * @param {string} sToolName
+         * @param {Object} oArgs
+         * @param {number} [iIndex]
+         * @returns {Object}
          */
         buildToolCallRequest: function (sToolName, oArgs, iIndex) {
             var sId = iIndex !== undefined
@@ -181,9 +231,8 @@ sap.ui.define([
         },
 
         /**
-         * Extract text result from a batch response item.
-         * 
-         * @param {Object} oResponse - Single response from batch results array
+         * Extract text from a batch response item.
+         * @param {Object} oResponse
          * @returns {Object} { text: string, isError: boolean }
          */
         extractBatchResultText: function (oResponse) {

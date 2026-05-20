@@ -74,8 +74,27 @@
     },
     "tools": {
       "type": "array",
-      "items": { "$ref": "#/definitions/toolReference" },
-      "description": "Tools available to the agent"
+      "items": { "type": "string" },
+      "description": "Tool IDs from the tool registry"
+    },
+    "toolFilters": {
+      "type": "object",
+      "description": "Per-tool function filters for this agent (key = tool ID)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "include": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Only use these functions from this tool"
+          },
+          "exclude": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Exclude these functions from this tool"
+          }
+        }
+      }
     },
     "maxSteps": {
       "type": "integer",
@@ -226,34 +245,5 @@
       }
     }
   },
-  "definitions": {
-    "toolReference": {
-      "type": "object",
-      "required": ["name", "type"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Tool name"
-        },
-        "type": {
-          "type": "string",
-          "enum": ["mcp", "rag", "graphrag", "memory", "api", "database", "code", "file", "web", "browser", "agent", "guardrails", "custom"],
-          "description": "Tool type"
-        },
-        "description": {
-          "type": "string",
-          "description": "Tool description"
-        },
-        "enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Whether tool is enabled"
-        },
-        "config": {
-          "type": "object",
-          "description": "Tool-specific configuration"
-        }
-      }
-    }
-  }
+  "definitions": {}
 }

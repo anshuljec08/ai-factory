@@ -25,48 +25,49 @@ sap.ui.define([
             return AGENTS[0] || null;
         },
 
+        // DEVIATION: No context providers or hooks loaded yet (Weeks 6-7) — see docs/phase1-deviations.md
         loadAgentsConfig: function (fnCallback) {
-            var sAgentsUrl = sap.ui.require.toUrl("ai/factory/models/agents.json");
-
             jQuery.ajax({
-                url: sAgentsUrl,
+                url: Constants.AGENTS_API_URL,
                 method: "GET",
                 dataType: "json",
                 success: function (oResponse) {
-                    if (oResponse && oResponse.agents && Array.isArray(oResponse.agents)) {
-                        AGENTS = oResponse.agents;
-                        console.log("[Chatbot] Loaded agents from JSON:", AGENTS.length);
-                        AgentManager.mergeCustomAgents();
-                        AGENTS_LOADED = true;
-                        if (fnCallback) fnCallback();
+                    var aAgents = [];
+                    if (oResponse && oResponse.data && Array.isArray(oResponse.data)) {
+                        aAgents = oResponse.data;
+                    } else if (Array.isArray(oResponse)) {
+                        aAgents = oResponse;
                     }
+                    AGENTS = aAgents;
+                    console.log("[AgentManager] Loaded agents from API:", AGENTS.length);
+                    AgentManager.mergeCustomAgents();
+                    AGENTS_LOADED = true;
+                    if (fnCallback) fnCallback();
                 },
                 error: function (oError) {
-                    console.warn("[Chatbot] Failed to load agents.json, using defaults:", oError);
+                    console.warn("[AgentManager] Failed to load agents from API, using defaults:", oError.statusText);
                     AGENTS = [
                         {
-                            id: "production",
+                            id: "production-agent",
                             name: "Production Agent",
-                            description: "SAP Digital Manufacturing assistant for orders, SFCs, and production data",
-                            mcpUrl: "https://sapdme-order-mcp-wacky-fox-bm.cfapps.eu10-004.hana.ondemand.com/mcp",
+                            description: "SAP Digital Manufacturing assistant",
+                            systemPrompt: "You are an AI assistant for SAP Digital Manufacturing.",
+                            model: "claude-opus-4-6",
+                            modelConfig: { maxTokens: 4096 },
+                            tools: [],
                             maxSteps: 30,
-                            systemPrompt: "You are an AI assistant for SAP Digital Manufacturing (SAP DM). You help production operators and managers with order management, production status, and shop floor operations.",
-                            authType: "none",
-                            authConfig: {},
-                            isDefault: true,
-                            isEditable: false
+                            timeout: 30000
                         },
                         {
-                            id: "general",
+                            id: "general-assistant",
                             name: "General Assistant",
-                            description: "General purpose AI assistant without specialized tools",
-                            mcpUrl: "",
+                            description: "General purpose AI assistant",
+                            systemPrompt: "You are a helpful AI assistant.",
+                            model: "claude-opus-4-6",
+                            modelConfig: { maxTokens: 4096 },
+                            tools: [],
                             maxSteps: 10,
-                            systemPrompt: "You are a helpful AI assistant. Answer questions clearly and concisely.",
-                            authType: "none",
-                            authConfig: {},
-                            isDefault: false,
-                            isEditable: false
+                            timeout: 30000
                         }
                     ];
                     AgentManager.mergeCustomAgents();
@@ -87,11 +88,11 @@ sap.ui.define([
                             aCustomAgents[i].isCustom = true;
                             AGENTS.push(aCustomAgents[i]);
                         }
-                        console.log("[Chatbot] Merged custom agents:", aCustomAgents.length);
+                        console.log("[AgentManager] Merged custom agents:", aCustomAgents.length);
                     }
                 }
             } catch (e) {
-                console.warn("[Chatbot] Error loading custom agents:", e);
+                console.warn("[AgentManager] Error loading custom agents:", e);
             }
         },
 
@@ -101,9 +102,8 @@ sap.ui.define([
                     return agent.isCustom === true;
                 });
                 localStorage.setItem(Constants.CUSTOM_AGENTS_KEY, JSON.stringify(aCustomAgents));
-                console.log("[Chatbot] Saved custom agents:", aCustomAgents.length);
             } catch (e) {
-                console.warn("[Chatbot] Error saving custom agents:", e);
+                console.warn("[AgentManager] Error saving custom agents:", e);
             }
         },
 
@@ -113,12 +113,11 @@ sap.ui.define([
                 if (sSavedAgent) {
                     var oAgent = AgentManager.getAgentById(sSavedAgent);
                     if (oAgent) {
-                        console.log("[Chatbot] Restored selected agent:", sSavedAgent);
                         return sSavedAgent;
                     }
                 }
             } catch (e) {
-                console.warn("[Chatbot] Error restoring selected agent:", e);
+                // ignore
             }
             return Constants.DEFAULT_AGENT;
         },
@@ -126,9 +125,8 @@ sap.ui.define([
         saveSelectedAgent: function (sAgentId) {
             try {
                 sessionStorage.setItem(Constants.AGENT_STORAGE_KEY, sAgentId);
-                console.log("[Chatbot] Saved selected agent:", sAgentId);
             } catch (e) {
-                console.warn("[Chatbot] Error saving selected agent:", e);
+                // ignore
             }
         },
 
@@ -138,11 +136,12 @@ sap.ui.define([
                 id: sNewId,
                 name: oAgentData.name,
                 description: oAgentData.description || "Custom agent",
-                mcpUrl: oAgentData.mcpUrl || "",
-                maxSteps: oAgentData.maxSteps || 30,
                 systemPrompt: oAgentData.systemPrompt,
-                authType: oAgentData.authType || "none",
-                authConfig: oAgentData.authConfig || {},
+                model: oAgentData.model || Constants.DEFAULT_MODEL,
+                modelConfig: oAgentData.modelConfig || { maxTokens: 4096 },
+                tools: oAgentData.tools || [],
+                maxSteps: oAgentData.maxSteps || 30,
+                timeout: oAgentData.timeout || 30000,
                 isDefault: false,
                 isEditable: true,
                 isCustom: true
@@ -155,13 +154,9 @@ sap.ui.define([
         updateAgent: function (sAgentId, oAgentData) {
             var oAgent = AgentManager.getAgentById(sAgentId);
             if (oAgent && oAgent.isEditable !== false) {
-                oAgent.name = oAgentData.name;
-                oAgent.description = oAgentData.description;
-                oAgent.mcpUrl = oAgentData.mcpUrl;
-                oAgent.maxSteps = oAgentData.maxSteps;
-                oAgent.systemPrompt = oAgentData.systemPrompt;
-                oAgent.authType = oAgentData.authType || "none";
-                oAgent.authConfig = oAgentData.authConfig || {};
+                Object.keys(oAgentData).forEach(function (sKey) {
+                    oAgent[sKey] = oAgentData[sKey];
+                });
                 AgentManager.saveCustomAgents();
                 return true;
             }
@@ -189,13 +184,12 @@ sap.ui.define([
                 id: sNewId,
                 name: oAgent.name + " (Copy)",
                 description: oAgent.description || "",
-                mcpUrl: oAgent.mcpUrl || "",
-                maxSteps: oAgent.maxSteps || 30,
-                maxResultChars: oAgent.maxResultChars || 40000,
-                maxRecords: oAgent.maxRecords || 50,
                 systemPrompt: oAgent.systemPrompt,
-                authType: oAgent.authType || "none",
-                authConfig: JSON.parse(JSON.stringify(oAgent.authConfig || {})),
+                model: oAgent.model || Constants.DEFAULT_MODEL,
+                modelConfig: JSON.parse(JSON.stringify(oAgent.modelConfig || {})),
+                tools: JSON.parse(JSON.stringify(oAgent.tools || [])),
+                maxSteps: oAgent.maxSteps || 30,
+                timeout: oAgent.timeout || 30000,
                 isDefault: false,
                 isEditable: true,
                 isCustom: true
@@ -208,24 +202,8 @@ sap.ui.define([
         exportAgents: function () {
             var oExportData = {
                 exportDate: new Date().toISOString(),
-                version: "1.0",
-                agents: AGENTS.map(function (agent) {
-                    return {
-                        id: agent.id,
-                        name: agent.name,
-                        description: agent.description,
-                        mcpUrl: agent.mcpUrl,
-                        maxSteps: agent.maxSteps,
-                        maxResultChars: agent.maxResultChars || 40000,
-                        maxRecords: agent.maxRecords || 50,
-                        systemPrompt: agent.systemPrompt,
-                        authType: agent.authType || "none",
-                        authConfig: agent.authConfig || {},
-                        isDefault: agent.isDefault || false,
-                        isEditable: agent.isEditable !== false,
-                        isCustom: agent.isCustom || false
-                    };
-                })
+                version: "2.0",
+                agents: AGENTS
             };
 
             var sJson = JSON.stringify(oExportData, null, 2);
@@ -270,35 +248,18 @@ sap.ui.define([
 
                         if (oExisting) {
                             if (oExisting.isCustom) {
-                                oExisting.name = oImportAgent.name;
-                                oExisting.description = oImportAgent.description || "";
-                                oExisting.mcpUrl = oImportAgent.mcpUrl || "";
-                                oExisting.maxSteps = oImportAgent.maxSteps || 30;
-                                oExisting.maxResultChars = oImportAgent.maxResultChars || 40000;
-                                oExisting.maxRecords = oImportAgent.maxRecords || 50;
-                                oExisting.systemPrompt = oImportAgent.systemPrompt;
-                                oExisting.authType = oImportAgent.authType || "none";
-                                oExisting.authConfig = oImportAgent.authConfig || {};
+                                Object.keys(oImportAgent).forEach(function (sKey) {
+                                    oExisting[sKey] = oImportAgent[sKey];
+                                });
                                 iUpdated++;
                             } else {
                                 iSkipped++;
                             }
                         } else {
-                            AGENTS.push({
-                                id: oImportAgent.id || "imported_" + Date.now() + "_" + i,
-                                name: oImportAgent.name,
-                                description: oImportAgent.description || "Imported agent",
-                                mcpUrl: oImportAgent.mcpUrl || "",
-                                maxSteps: oImportAgent.maxSteps || 30,
-                                maxResultChars: oImportAgent.maxResultChars || 40000,
-                                maxRecords: oImportAgent.maxRecords || 50,
-                                systemPrompt: oImportAgent.systemPrompt,
-                                authType: oImportAgent.authType || "none",
-                                authConfig: oImportAgent.authConfig || {},
-                                isDefault: false,
-                                isEditable: true,
-                                isCustom: true
-                            });
+                            oImportAgent.id = oImportAgent.id || "imported_" + Date.now() + "_" + i;
+                            oImportAgent.isEditable = true;
+                            oImportAgent.isCustom = true;
+                            AGENTS.push(oImportAgent);
                             iImported++;
                         }
                     }
@@ -307,7 +268,6 @@ sap.ui.define([
                     fnCallback({ imported: iImported, updated: iUpdated, skipped: iSkipped });
 
                 } catch (e) {
-                    console.error("[Chatbot] Import error:", e);
                     fnCallback({ error: "Import failed: " + e.message });
                 }
             };

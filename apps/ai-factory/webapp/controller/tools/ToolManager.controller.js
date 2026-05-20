@@ -6,352 +6,255 @@ sap.ui.define([
     "sap/m/Dialog",
     "sap/m/Button",
     "sap/m/Input",
-    "sap/m/TextArea",
     "sap/m/Select",
     "sap/m/Label",
     "sap/m/VBox",
-    "sap/ui/core/Item"
-], function (BaseController, JSONModel, MessageToast, MessageBox, Dialog, Button, Input, TextArea, Select, Label, VBox, Item) {
+    "sap/m/List",
+    "sap/m/StandardListItem",
+    "sap/ui/core/Item",
+    "ai/factory/util/Constants"
+], function (BaseController, JSONModel, MessageToast, MessageBox, Dialog, Button, Input, Select, Label, VBox, List, StandardListItem, Item, Constants) {
     "use strict";
 
-    var TOOLS_STORAGE_KEY = "aifactory_tools";
-
     return BaseController.extend("ai.factory.controller.tools.ToolManager", {
-        
-        _sApiUrl: "/api/v1",
-        
+
         onInit: function () {
-            // Initialize tools model
             var oToolsModel = new JSONModel({
                 tools: [],
                 totalCount: 0,
                 mcpCount: 0,
                 apiCount: 0,
-                customCount: 0,
+                otherCount: 0,
                 filteredCount: 0,
                 selectedCount: 0,
                 filterType: "all",
                 filterStatus: "all"
             });
             this.getView().setModel(oToolsModel, "tools");
-            
-            // Store all tools for filtering
+
             this._aAllTools = [];
-            
-            // Load tools when view is displayed
+            this._oAgentUsage = {};
+
             var oRouter = this.getOwnerComponent().getRouter();
             oRouter.getRoute("toolManager").attachPatternMatched(this._onRouteMatched, this);
         },
-        
+
         _onRouteMatched: function () {
             this._loadTools();
-            this._checkPendingTools();
         },
-        
-        /**
-         * Check for pending tools from MCP Builder
-         */
-        _checkPendingTools: function () {
-            var sPendingTools = sessionStorage.getItem("aifactory_pending_tools");
-            if (sPendingTools) {
-                try {
-                    var aPendingTools = JSON.parse(sPendingTools);
-                    if (aPendingTools.length > 0) {
-                        this._showImportPendingDialog(aPendingTools);
-                    }
-                } catch (e) {
-                    console.error("Failed to parse pending tools:", e);
-                }
-            }
-        },
-        
-        /**
-         * Show dialog to import pending tools
-         */
-        _showImportPendingDialog: function (aPendingTools) {
-            var that = this;
-            
-            MessageBox.confirm(
-                "You have " + aPendingTools.length + " tools from MCP Builder ready to import. Would you like to add them now?",
-                {
-                    title: "Import Tools",
-                    actions: [MessageBox.Action.YES, MessageBox.Action.NO],
-                    onClose: function (sAction) {
-                        if (sAction === MessageBox.Action.YES) {
-                            that._importTools(aPendingTools);
-                        }
-                        // Clear pending tools
-                        sessionStorage.removeItem("aifactory_pending_tools");
-                    }
-                }
-            );
-        },
-        
-        /**
-         * Load tools from agents
-         */
+
         _loadTools: function () {
             var that = this;
-            var oModel = this.getView().getModel("tools");
-            
-            // Load tools from all agents
-            fetch(this._sApiUrl + "/agents")
-                .then(function (response) {
-                    if (!response.ok) {
-                        throw new Error("Failed to load agents");
-                    }
-                    return response.json();
-                })
-                .then(function (oData) {
-                    var aAgents = oData.data || oData || [];
-                    var aTools = that._extractToolsFromAgents(aAgents);
-                    
-                    // Also load locally stored tools
-                    var aLocalTools = that._loadLocalTools();
-                    
-                    // Merge tools (avoid duplicates)
-                    var oToolMap = {};
-                    aTools.forEach(function (t) { oToolMap[t.id] = t; });
-                    aLocalTools.forEach(function (t) { 
-                        if (!oToolMap[t.id]) {
-                            oToolMap[t.id] = t;
-                        }
-                    });
-                    
-                    var aMergedTools = Object.values(oToolMap);
-                    that._aAllTools = aMergedTools;
-                    
-                    that._updateToolCounts(aMergedTools);
-                    that._applyFilters();
-                })
-                .catch(function (error) {
-                    console.error("Error loading tools:", error);
-                    
-                    // Load local tools as fallback
-                    var aLocalTools = that._loadLocalTools();
-                    that._aAllTools = aLocalTools;
-                    that._updateToolCounts(aLocalTools);
-                    that._applyFilters();
+
+            Promise.all([
+                fetch(Constants.TOOLS_API_URL).then(function (r) { return r.json(); }),
+                fetch(Constants.AGENTS_API_URL).then(function (r) { return r.json(); })
+            ]).then(function (aResults) {
+                var aTools = aResults[0].data || [];
+                var aAgents = aResults[1].data || [];
+
+                that._oAgentUsage = that._computeAgentUsage(aAgents);
+
+                aTools.forEach(function (oTool) {
+                    oTool.usedByCount = (that._oAgentUsage[oTool.id] || []).length;
                 });
-        },
-        
-        /**
-         * Extract tools from agents
-         */
-        _extractToolsFromAgents: function (aAgents) {
-            var oToolMap = {};
-            
-            aAgents.forEach(function (oAgent) {
-                if (oAgent.tools && oAgent.tools.length > 0) {
-                    oAgent.tools.forEach(function (oTool) {
-                        var sToolId = oTool.name || oTool.id;
-                        if (!oToolMap[sToolId]) {
-                            oToolMap[sToolId] = {
-                                id: sToolId,
-                                name: oTool.name,
-                                type: oTool.type || "custom",
-                                description: oTool.description || "",
-                                enabled: oTool.enabled !== false,
-                                config: oTool.config || {},
-                                inputSchema: oTool.inputSchema || oTool.config?.inputSchema || {},
-                                usedByAgents: [oAgent.id],
-                                usedByCount: 1
-                            };
-                        } else {
-                            // Tool already exists, add agent reference
-                            if (!oToolMap[sToolId].usedByAgents.includes(oAgent.id)) {
-                                oToolMap[sToolId].usedByAgents.push(oAgent.id);
-                                oToolMap[sToolId].usedByCount++;
-                            }
-                        }
-                    });
-                }
+
+                that._aAllTools = aTools;
+                that._updateToolCounts(aTools);
+                that._applyFilters();
+            }).catch(function (error) {
+                console.error("[ToolManager] Failed to load tools:", error);
+                MessageToast.show("Failed to load tools");
             });
-            
-            return Object.values(oToolMap);
         },
-        
-        /**
-         * Load locally stored tools
-         */
-        _loadLocalTools: function () {
-            try {
-                var sStored = localStorage.getItem(TOOLS_STORAGE_KEY);
-                return sStored ? JSON.parse(sStored) : [];
-            } catch (e) {
-                return [];
-            }
+
+        _computeAgentUsage: function (aAgents) {
+            var oUsage = {};
+            aAgents.forEach(function (oAgent) {
+                var aToolIds = oAgent.tools || [];
+                aToolIds.forEach(function (sToolId) {
+                    if (typeof sToolId === "string") {
+                        if (!oUsage[sToolId]) { oUsage[sToolId] = []; }
+                        oUsage[sToolId].push(oAgent.id);
+                    }
+                });
+            });
+            return oUsage;
         },
-        
-        /**
-         * Save tools to local storage
-         */
-        _saveLocalTools: function (aTools) {
-            try {
-                localStorage.setItem(TOOLS_STORAGE_KEY, JSON.stringify(aTools));
-            } catch (e) {
-                console.error("Failed to save tools:", e);
-            }
-        },
-        
-        /**
-         * Update tool counts
-         */
+
         _updateToolCounts: function (aTools) {
             var oModel = this.getView().getModel("tools");
-            
-            var iMcpCount = aTools.filter(function (t) { return t.type === "mcp"; }).length;
-            var iApiCount = aTools.filter(function (t) { return t.type === "api"; }).length;
-            var iCustomCount = aTools.filter(function (t) { return t.type === "custom"; }).length;
-            
+            var iMcp = 0, iApi = 0, iOther = 0;
+            aTools.forEach(function (t) {
+                if (t.type === "mcp") { iMcp++; }
+                else if (t.type === "api") { iApi++; }
+                else { iOther++; }
+            });
             oModel.setProperty("/totalCount", aTools.length);
-            oModel.setProperty("/mcpCount", iMcpCount);
-            oModel.setProperty("/apiCount", iApiCount);
-            oModel.setProperty("/customCount", iCustomCount);
+            oModel.setProperty("/mcpCount", iMcp);
+            oModel.setProperty("/apiCount", iApi);
+            oModel.setProperty("/otherCount", iOther);
         },
-        
-        /**
-         * Apply filters
-         */
+
         _applyFilters: function () {
             var oModel = this.getView().getModel("tools");
             var sTypeFilter = oModel.getProperty("/filterType");
             var sStatusFilter = oModel.getProperty("/filterStatus");
-            var sSearchQuery = this.byId("toolSearchField")?.getValue() || "";
-            
+            var oSearchField = this.byId("toolSearchField");
+            var sSearchQuery = oSearchField ? oSearchField.getValue() : "";
+
             var aFiltered = this._aAllTools.filter(function (oTool) {
-                // Type filter
-                if (sTypeFilter !== "all" && oTool.type !== sTypeFilter) {
-                    return false;
-                }
-                
-                // Status filter
-                if (sStatusFilter === "enabled" && !oTool.enabled) {
-                    return false;
-                }
-                if (sStatusFilter === "disabled" && oTool.enabled) {
-                    return false;
-                }
-                
-                // Search filter
+                if (sTypeFilter !== "all" && oTool.type !== sTypeFilter) return false;
+                if (sStatusFilter === "enabled" && !oTool.enabled) return false;
+                if (sStatusFilter === "disabled" && oTool.enabled) return false;
                 if (sSearchQuery) {
                     var sLower = sSearchQuery.toLowerCase();
                     if (!oTool.name.toLowerCase().includes(sLower) &&
+                        !oTool.id.toLowerCase().includes(sLower) &&
                         !(oTool.description && oTool.description.toLowerCase().includes(sLower))) {
                         return false;
                     }
                 }
-                
                 return true;
             });
-            
+
             oModel.setProperty("/tools", aFiltered);
             oModel.setProperty("/filteredCount", aFiltered.length);
         },
-        
-        /**
-         * Refresh tools
-         */
+
         onRefresh: function () {
             this._loadTools();
             MessageToast.show("Tools refreshed");
         },
-        
-        /**
-         * Search tools
-         */
+
         onSearchTools: function () {
             this._applyFilters();
         },
-        
-        /**
-         * Filter change
-         */
+
         onFilterChange: function () {
             this._applyFilters();
         },
-        
-        /**
-         * Tool selection change
-         */
+
         onToolSelectionChange: function () {
             var oTable = this.byId("toolsTable");
-            var aSelectedItems = oTable.getSelectedItems();
             var oModel = this.getView().getModel("tools");
-            
-            oModel.setProperty("/selectedCount", aSelectedItems.length);
+            oModel.setProperty("/selectedCount", oTable.getSelectedItems().length);
         },
-        
-        /**
-         * Create new tool
-         */
-        onCreateTool: function () {
-            this._showToolDialog(null);
-        },
-        
-        /**
-         * Edit tool
-         */
+
         onEditTool: function (oEvent) {
-            var oContext = oEvent.getSource().getBindingContext("tools");
-            var oTool = oContext.getObject();
+            var oTool = oEvent.getSource().getBindingContext("tools").getObject();
             this._showToolDialog(oTool);
         },
-        
-        /**
-         * Show tool dialog
-         */
+
         _showToolDialog: function (oTool) {
             var that = this;
-            var bIsEdit = !!oTool;
-            
+
             var oNameInput = new Input({
-                value: bIsEdit ? oTool.name : "",
-                placeholder: "Tool name (e.g., get-orders)"
+                value: oTool.name,
+                placeholder: "e.g. SAP Digital Manufacturing",
+                width: "100%"
             });
-            
+
+            var oIdInput = new Input({
+                value: oTool.id,
+                width: "100%",
+                editable: false
+            });
+
             var oTypeSelect = new Select({
-                selectedKey: bIsEdit ? oTool.type : "custom",
+                selectedKey: oTool.type,
+                width: "100%",
                 items: [
-                    new Item({ key: "mcp", text: "MCP Tool" }),
-                    new Item({ key: "api", text: "API Tool" }),
-                    new Item({ key: "custom", text: "Custom Tool" })
+                    new Item({ key: "mcp", text: "MCP Server" }),
+                    new Item({ key: "api", text: "REST API" }),
+                    new Item({ key: "custom", text: "Custom" })
                 ]
             });
-            
-            var oDescInput = new TextArea({
-                value: bIsEdit ? oTool.description : "",
-                placeholder: "Tool description",
-                rows: 3,
+
+            var oUrlInput = new Input({
+                value: oTool.config && oTool.config.mcpUrl || "",
+                placeholder: "https://your-mcp-server.com/mcp",
                 width: "100%"
             });
-            
-            var oSchemaInput = new TextArea({
-                value: bIsEdit ? JSON.stringify(oTool.inputSchema || {}, null, 2) : "{}",
-                placeholder: "Input schema (JSON)",
-                rows: 8,
+
+            var oDescInput = new Input({
+                value: oTool.description || "",
+                placeholder: "Brief description of what this tool provides",
                 width: "100%"
             });
-            
+
+            var aExistingFunctions = (oTool.functionFilter && oTool.functionFilter.functions) || [];
+
+            var oFilterSelect = new Select({
+                selectedKey: oTool.functionFilter && oTool.functionFilter.mode || "all",
+                width: "100%",
+                items: [
+                    new Item({ key: "all", text: "All functions (no filter)" }),
+                    new Item({ key: "include", text: "Include only listed" }),
+                    new Item({ key: "exclude", text: "Exclude listed" })
+                ],
+                change: function () {
+                    var bShowList = oFilterSelect.getSelectedKey() !== "all";
+                    oFunctionListContainer.setVisible(bShowList);
+                    if (bShowList && oFunctionList.getItems().length === 0) {
+                        that._discoverFunctionsForDialog(oTool.id, oUrlInput.getValue().trim(), oFunctionList, aExistingFunctions);
+                    }
+                }
+            });
+
+            var oFunctionList = new List({
+                mode: "MultiSelect",
+                noDataText: "Click 'Discover' to load functions",
+                growing: false
+            });
+
+            var oDiscoverBtn = new Button({
+                text: "Discover Functions",
+                icon: "sap-icon://refresh",
+                press: function () {
+                    that._discoverFunctionsForDialog(oTool.id, oUrlInput.getValue().trim(), oFunctionList, aExistingFunctions);
+                }
+            });
+
+            var oFunctionListContainer = new VBox({
+                visible: oTool.functionFilter && oTool.functionFilter.mode !== "all",
+                items: [
+                    oDiscoverBtn,
+                    oFunctionList
+                ]
+            }).addStyleClass("sapUiTinyMarginTop");
+
+            // Auto-load functions if active filter exists
+            if (oTool.functionFilter && oTool.functionFilter.mode !== "all") {
+                setTimeout(function () {
+                    that._discoverFunctionsForDialog(oTool.id, null, oFunctionList, aExistingFunctions);
+                }, 300);
+            }
+
             var oDialog = new Dialog({
-                title: bIsEdit ? "Edit Tool" : "Create Tool",
-                contentWidth: "500px",
+                title: "Edit Tool: " + oTool.name,
+                contentWidth: "550px",
                 content: [
                     new VBox({
                         items: [
                             new Label({ text: "Name", required: true }),
                             oNameInput,
+                            new Label({ text: "ID", class: "sapUiSmallMarginTop" }),
+                            oIdInput,
                             new Label({ text: "Type", class: "sapUiSmallMarginTop" }),
                             oTypeSelect,
+                            new Label({ text: "Endpoint URL", class: "sapUiSmallMarginTop" }),
+                            oUrlInput,
                             new Label({ text: "Description", class: "sapUiSmallMarginTop" }),
                             oDescInput,
-                            new Label({ text: "Input Schema (JSON)", class: "sapUiSmallMarginTop" }),
-                            oSchemaInput
+                            new Label({ text: "Function Filter", class: "sapUiSmallMarginTop" }),
+                            oFilterSelect,
+                            oFunctionListContainer
                         ]
                     }).addStyleClass("sapUiSmallMargin")
                 ],
                 beginButton: new Button({
-                    text: bIsEdit ? "Save" : "Create",
+                    text: "Save",
                     type: "Emphasized",
                     press: function () {
                         var sName = oNameInput.getValue().trim();
@@ -359,327 +262,248 @@ sap.ui.define([
                             MessageToast.show("Name is required");
                             return;
                         }
-                        
-                        var oInputSchema;
-                        try {
-                            oInputSchema = JSON.parse(oSchemaInput.getValue());
-                        } catch (e) {
-                            MessageBox.error("Invalid JSON in input schema");
-                            return;
+
+                        var sFilterMode = oFilterSelect.getSelectedKey();
+                        var aFilterFunctions = [];
+                        if (sFilterMode !== "all") {
+                            aFilterFunctions = oFunctionList.getSelectedItems().map(function (oItem) {
+                                return oItem.getTitle();
+                            });
                         }
-                        
-                        var oNewTool = {
-                            id: bIsEdit ? oTool.id : sName.toLowerCase().replace(/\s+/g, "-"),
+
+                        var oToolData = {
+                            id: oTool.id,
                             name: sName,
                             type: oTypeSelect.getSelectedKey(),
-                            description: oDescInput.getValue(),
-                            enabled: bIsEdit ? oTool.enabled : true,
-                            inputSchema: oInputSchema,
-                            usedByAgents: bIsEdit ? oTool.usedByAgents : [],
-                            usedByCount: bIsEdit ? oTool.usedByCount : 0
+                            description: oDescInput.getValue().trim(),
+                            config: {
+                                mcpUrl: oUrlInput.getValue().trim(),
+                                authType: oTool.config ? oTool.config.authType || "none" : "none",
+                                authConfig: oTool.config ? oTool.config.authConfig : undefined
+                            },
+                            functionFilter: {
+                                mode: sFilterMode,
+                                functions: sFilterMode !== "all" ? aFilterFunctions : undefined
+                            },
+                            enabled: oTool.enabled
                         };
-                        
-                        if (bIsEdit) {
-                            that._updateTool(oNewTool);
-                        } else {
-                            that._addTool(oNewTool);
-                        }
-                        
+
+                        that._updateTool(oTool.id, oToolData);
                         oDialog.close();
                     }
                 }),
                 endButton: new Button({
                     text: "Cancel",
-                    press: function () {
-                        oDialog.close();
-                    }
+                    press: function () { oDialog.close(); }
                 }),
-                afterClose: function () {
-                    oDialog.destroy();
-                }
+                afterClose: function () { oDialog.destroy(); }
             });
-            
+
             oDialog.open();
         },
-        
-        /**
-         * Add new tool
-         */
-        _addTool: function (oTool) {
-            // Check if tool already exists
-            var bExists = this._aAllTools.some(function (t) { return t.id === oTool.id; });
-            if (bExists) {
-                MessageBox.error("A tool with this name already exists");
+
+        _discoverFunctionsForDialog: function (sToolId, sMcpUrl, oFunctionList, aPreSelected) {
+            oFunctionList.setBusy(true);
+            oFunctionList.removeAllItems();
+
+            var sUrl;
+            if (sToolId) {
+                sUrl = Constants.TOOLS_API_URL + "/" + encodeURIComponent(sToolId) + "/functions?raw=true";
+            } else if (sMcpUrl) {
+                sUrl = Constants.TOOLS_API_URL + "/discover?mcpUrl=" + encodeURIComponent(sMcpUrl);
+            } else {
+                oFunctionList.setBusy(false);
+                MessageToast.show("Save the tool first or provide an endpoint URL");
                 return;
             }
-            
-            this._aAllTools.push(oTool);
-            this._saveLocalTools(this._aAllTools);
-            this._updateToolCounts(this._aAllTools);
-            this._applyFilters();
-            
-            MessageToast.show("Tool created: " + oTool.name);
+
+            fetch(sUrl)
+                .then(function (r) { return r.json(); })
+                .then(function (oData) {
+                    oFunctionList.setBusy(false);
+                    var aFunctions = (oData.data && oData.data.functions) || [];
+                    if (aFunctions.length === 0) {
+                        oFunctionList.setNoDataText("No functions found");
+                        return;
+                    }
+                    aFunctions.forEach(function (oFunc) {
+                        var sName = oFunc.name || oFunc;
+                        var sDesc = oFunc.description || "";
+                        var oItem = new StandardListItem({
+                            title: sName,
+                            description: sDesc.substring(0, 80),
+                            selected: aPreSelected.indexOf(sName) !== -1
+                        });
+                        oFunctionList.addItem(oItem);
+                    });
+                })
+                .catch(function (err) {
+                    oFunctionList.setBusy(false);
+                    oFunctionList.setNoDataText("Failed to discover: " + err.message);
+                });
         },
-        
-        /**
-         * Update existing tool
-         */
-        _updateTool: function (oTool) {
-            var iIndex = this._aAllTools.findIndex(function (t) { return t.id === oTool.id; });
-            if (iIndex >= 0) {
-                this._aAllTools[iIndex] = oTool;
-                this._saveLocalTools(this._aAllTools);
-                this._applyFilters();
-                
-                MessageToast.show("Tool updated: " + oTool.name);
-            }
+
+        _updateTool: function (sId, oToolData) {
+            var that = this;
+            jQuery.ajax({
+                url: Constants.TOOLS_API_URL + "/" + encodeURIComponent(sId),
+                method: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(oToolData),
+                success: function () {
+                    MessageToast.show("Tool updated: " + oToolData.name);
+                    that._loadTools();
+                },
+                error: function (jqXHR) {
+                    var sMsg = "Failed to update tool";
+                    if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+                        sMsg = jqXHR.responseJSON.error.message || sMsg;
+                    }
+                    MessageBox.error(sMsg);
+                }
+            });
         },
-        
-        /**
-         * Duplicate tool
-         */
-        onDuplicateTool: function (oEvent) {
-            var oContext = oEvent.getSource().getBindingContext("tools");
-            var oTool = oContext.getObject();
-            
-            var oNewTool = JSON.parse(JSON.stringify(oTool));
-            oNewTool.id = oTool.id + "-copy";
-            oNewTool.name = oTool.name + " (Copy)";
-            oNewTool.usedByAgents = [];
-            oNewTool.usedByCount = 0;
-            
-            this._addTool(oNewTool);
-        },
-        
-        /**
-         * Delete tool
-         */
+
         onDeleteTool: function (oEvent) {
             var that = this;
-            var oContext = oEvent.getSource().getBindingContext("tools");
-            var oTool = oContext.getObject();
-            
-            MessageBox.confirm(
-                "Delete tool '" + oTool.name + "'?\n\nThis tool is used by " + oTool.usedByCount + " agent(s).",
-                {
-                    title: "Delete Tool",
-                    actions: [MessageBox.Action.DELETE, MessageBox.Action.CANCEL],
-                    emphasizedAction: MessageBox.Action.DELETE,
-                    onClose: function (sAction) {
-                        if (sAction === MessageBox.Action.DELETE) {
-                            that._deleteTool(oTool.id);
-                        }
+            var oTool = oEvent.getSource().getBindingContext("tools").getObject();
+            var aAgents = this._oAgentUsage[oTool.id] || [];
+
+            var sMsg = "Delete tool '" + oTool.name + "'?";
+            if (aAgents.length > 0) {
+                sMsg += "\n\nUsed by " + aAgents.length + " agent(s): " + aAgents.join(", ");
+            }
+
+            MessageBox.confirm(sMsg, {
+                title: "Delete Tool",
+                actions: [MessageBox.Action.DELETE, MessageBox.Action.CANCEL],
+                emphasizedAction: MessageBox.Action.DELETE,
+                onClose: function (sAction) {
+                    if (sAction === MessageBox.Action.DELETE) {
+                        that._deleteTool(oTool.id);
                     }
                 }
-            );
+            });
         },
-        
-        /**
-         * Delete tool by ID
-         */
-        _deleteTool: function (sToolId) {
-            this._aAllTools = this._aAllTools.filter(function (t) { return t.id !== sToolId; });
-            this._saveLocalTools(this._aAllTools);
-            this._updateToolCounts(this._aAllTools);
-            this._applyFilters();
-            
-            MessageToast.show("Tool deleted");
+
+        _deleteTool: function (sId) {
+            var that = this;
+            jQuery.ajax({
+                url: Constants.TOOLS_API_URL + "/" + encodeURIComponent(sId),
+                method: "DELETE",
+                success: function () {
+                    MessageToast.show("Tool deleted");
+                    that._loadTools();
+                },
+                error: function (jqXHR) {
+                    var sMsg = "Failed to delete tool";
+                    if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+                        sMsg = jqXHR.responseJSON.error.message || sMsg;
+                    }
+                    MessageBox.error(sMsg);
+                }
+            });
         },
-        
-        /**
-         * Delete selected tools
-         */
+
         onDeleteSelected: function () {
             var that = this;
             var oTable = this.byId("toolsTable");
             var aSelectedItems = oTable.getSelectedItems();
-            
+
             if (aSelectedItems.length === 0) {
                 MessageToast.show("No tools selected");
                 return;
             }
-            
-            MessageBox.confirm(
-                "Delete " + aSelectedItems.length + " selected tool(s)?",
-                {
-                    title: "Delete Tools",
-                    actions: [MessageBox.Action.DELETE, MessageBox.Action.CANCEL],
-                    emphasizedAction: MessageBox.Action.DELETE,
-                    onClose: function (sAction) {
-                        if (sAction === MessageBox.Action.DELETE) {
-                            var aToolIds = aSelectedItems.map(function (oItem) {
-                                return oItem.getBindingContext("tools").getObject().id;
+
+            MessageBox.confirm("Delete " + aSelectedItems.length + " selected tool(s)?", {
+                title: "Delete Tools",
+                actions: [MessageBox.Action.DELETE, MessageBox.Action.CANCEL],
+                emphasizedAction: MessageBox.Action.DELETE,
+                onClose: function (sAction) {
+                    if (sAction === MessageBox.Action.DELETE) {
+                        var aToolIds = aSelectedItems.map(function (oItem) {
+                            return oItem.getBindingContext("tools").getObject().id;
+                        });
+                        var aDeletes = aToolIds.map(function (sId) {
+                            return new Promise(function (resolve) {
+                                jQuery.ajax({
+                                    url: Constants.TOOLS_API_URL + "/" + encodeURIComponent(sId),
+                                    method: "DELETE",
+                                    success: function () { resolve(true); },
+                                    error: function () { resolve(false); }
+                                });
                             });
-                            
-                            that._aAllTools = that._aAllTools.filter(function (t) {
-                                return !aToolIds.includes(t.id);
-                            });
-                            
-                            that._saveLocalTools(that._aAllTools);
-                            that._updateToolCounts(that._aAllTools);
-                            that._applyFilters();
-                            
+                        });
+                        Promise.all(aDeletes).then(function () {
                             oTable.removeSelections();
                             that.getView().getModel("tools").setProperty("/selectedCount", 0);
-                            
+                            that._loadTools();
                             MessageToast.show(aToolIds.length + " tool(s) deleted");
-                        }
+                        });
                     }
                 }
-            );
-        },
-        
-        /**
-         * Enable selected tools
-         */
-        onEnableSelected: function () {
-            this._setSelectedToolsStatus(true);
-        },
-        
-        /**
-         * Disable selected tools
-         */
-        onDisableSelected: function () {
-            this._setSelectedToolsStatus(false);
-        },
-        
-        /**
-         * Set status for selected tools
-         */
-        _setSelectedToolsStatus: function (bEnabled) {
-            var oTable = this.byId("toolsTable");
-            var aSelectedItems = oTable.getSelectedItems();
-            
-            aSelectedItems.forEach(function (oItem) {
-                var oTool = oItem.getBindingContext("tools").getObject();
-                oTool.enabled = bEnabled;
             });
-            
-            this._saveLocalTools(this._aAllTools);
-            this._applyFilters();
-            
-            MessageToast.show(aSelectedItems.length + " tool(s) " + (bEnabled ? "enabled" : "disabled"));
         },
-        
-        /**
-         * Tool status change
-         */
+
         onToolStatusChange: function (oEvent) {
             var bState = oEvent.getParameter("state");
-            var oContext = oEvent.getSource().getBindingContext("tools");
-            var oTool = oContext.getObject();
-            
-            oTool.enabled = bState;
-            this._saveLocalTools(this._aAllTools);
-            
-            MessageToast.show("Tool " + (bState ? "enabled" : "disabled") + ": " + oTool.name);
-        },
-        
-        /**
-         * Test tool
-         */
-        onTestTool: function (oEvent) {
-            var oContext = oEvent.getSource().getBindingContext("tools");
-            var oTool = oContext.getObject();
-            
-            // Navigate to MCP Builder with tool selected
-            MessageToast.show("Navigate to MCP Builder to test tool: " + oTool.name);
-            this.getOwnerComponent().getRouter().navTo("mcpBuilder");
-        },
-        
-        /**
-         * Export tools
-         */
-        onExportTools: function () {
-            var oModel = this.getView().getModel("tools");
-            var aTools = oModel.getProperty("/tools");
-            
-            var oExport = {
-                exportedAt: new Date().toISOString(),
-                toolCount: aTools.length,
-                tools: aTools
-            };
-            
-            var sJson = JSON.stringify(oExport, null, 2);
-            var oBlob = new Blob([sJson], { type: "application/json" });
-            var sUrl = URL.createObjectURL(oBlob);
-            
-            var oLink = document.createElement("a");
-            oLink.href = sUrl;
-            oLink.download = "tools-export.json";
-            oLink.click();
-            
-            URL.revokeObjectURL(sUrl);
-            MessageToast.show("Tools exported successfully");
-        },
-        
-        /**
-         * Import tools
-         */
-        onImportTools: function () {
-            var that = this;
-            
-            var oFileInput = document.createElement("input");
-            oFileInput.type = "file";
-            oFileInput.accept = ".json";
-            oFileInput.onchange = function (oEvent) {
-                var oFile = oEvent.target.files[0];
-                if (oFile) {
-                    var oReader = new FileReader();
-                    oReader.onload = function (e) {
-                        try {
-                            var oData = JSON.parse(e.target.result);
-                            var aTools = oData.tools || oData;
-                            if (Array.isArray(aTools)) {
-                                that._importTools(aTools);
-                            } else {
-                                MessageBox.error("Invalid tools file format");
-                            }
-                        } catch (err) {
-                            MessageBox.error("Failed to parse file: " + err.message);
-                        }
-                    };
-                    oReader.readAsText(oFile);
-                }
-            };
-            oFileInput.click();
-        },
-        
-        /**
-         * Import tools array
-         */
-        _importTools: function (aTools) {
-            var iImported = 0;
-            var that = this;
-            
-            aTools.forEach(function (oTool) {
-                var bExists = that._aAllTools.some(function (t) { return t.id === oTool.id || t.name === oTool.name; });
-                if (!bExists) {
-                    that._aAllTools.push({
-                        id: oTool.id || oTool.name.toLowerCase().replace(/\s+/g, "-"),
-                        name: oTool.name,
-                        type: oTool.type || "custom",
-                        description: oTool.description || "",
-                        enabled: oTool.enabled !== false,
-                        inputSchema: oTool.inputSchema || oTool.config?.inputSchema || {},
-                        config: oTool.config || {},
-                        usedByAgents: [],
-                        usedByCount: 0
-                    });
-                    iImported++;
+            var oTool = oEvent.getSource().getBindingContext("tools").getObject();
+
+            jQuery.ajax({
+                url: Constants.TOOLS_API_URL + "/" + encodeURIComponent(oTool.id),
+                method: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify({ enabled: bState }),
+                success: function () {
+                    MessageToast.show("Tool " + (bState ? "enabled" : "disabled") + ": " + oTool.name);
+                },
+                error: function () {
+                    MessageToast.show("Failed to update tool status");
                 }
             });
-            
-            this._saveLocalTools(this._aAllTools);
-            this._updateToolCounts(this._aAllTools);
-            this._applyFilters();
-            
-            MessageToast.show(iImported + " tool(s) imported");
         },
-        
-        /**
-         * Navigate back
-         */
+
+        onTestConnection: function (oEvent) {
+            var oTool = oEvent.getSource().getBindingContext("tools").getObject();
+
+            if (oTool.type !== "mcp") {
+                MessageToast.show("Connection test only available for MCP tools");
+                return;
+            }
+
+            var oBtn = oEvent.getSource();
+            oBtn.setBusy(true);
+
+            jQuery.ajax({
+                url: Constants.TOOLS_API_URL + "/" + encodeURIComponent(oTool.id) + "/functions",
+                method: "GET",
+                success: function (oResponse) {
+                    oBtn.setBusy(false);
+                    var iCount = oResponse.data ? oResponse.data.count : 0;
+                    var bFiltered = oResponse.data ? oResponse.data.filterApplied : false;
+                    MessageBox.success(
+                        "Connection successful!\n\n" +
+                        "Functions discovered: " + iCount +
+                        (bFiltered ? " (filter applied)" : ""),
+                        { title: "Test: " + oTool.name }
+                    );
+                },
+                error: function (jqXHR) {
+                    oBtn.setBusy(false);
+                    var sMsg = "Connection failed";
+                    if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+                        sMsg = jqXHR.responseJSON.error.message || sMsg;
+                    }
+                    MessageBox.error(sMsg, { title: "Test: " + oTool.name });
+                }
+            });
+        },
+
+        onNavigateToBuilder: function (oEvent) {
+            var sRoute = oEvent.getSource().data("route");
+            this.getOwnerComponent().getRouter().navTo(sRoute);
+        },
+
         onNavBack: function () {
             var oRouter = this.getOwnerComponent().getRouter();
             oRouter.navTo("home");

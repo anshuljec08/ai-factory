@@ -588,251 +588,155 @@ CREATE TABLE agent_versions (
 
 ---
 
-## Phase 2: Framework Expansion (Weeks 5-8)
+## Phase 2: Framework Expansion (Weeks 5-8) — UPDATED 2026-05-21
 
 ### Goals
-- Add LangGraph framework support
-- Add MAF (Microsoft Agent Framework) support
-- Create unified Execution Engine
-- Enable framework switching in UI
+- Build Dual Execution Engine (Node.js + Python) — resolves Deviation #2
+- Add LangGraph support in both JS and Python runtimes
+- Add MAF (Microsoft Agent Framework) support in both JS and Python runtimes
+- Add RAG tools (vector search, document ingestion)
+- Add Agent Scheduler (cron-based execution)
+- Resolve all 5 Phase 1 deviations (Tool Registry, Hooks, Context Providers, Structured Prompts)
+- Enable framework + runtime switching in UI
+
+### Architecture: Dual Execution Engine
+
+Both LangGraph and MAF have JS and Python SDKs. Both engines support all frameworks.
+Agent config specifies `runtime: "node"` (default) or `runtime: "python"`.
+
+```
+Node.js Engine (port 3003):  MCP Runtime + LangGraph JS + MAF JS + Scheduler + Log Store
+Python Engine (port 3004):   LangGraph Python + MAF Python + RAG Service
+```
 
 ---
 
-### Week 5: LangGraph Builder
+### Week 5: Node.js Execution Engine + MCP Runtime
 
-#### Day 1-2: LangGraph Builder UI
-
-**Tasks:**
-- [ ] Create UI5 application for LangGraph Builder
-- [ ] Implement graph visualization component
-- [ ] Add node palette (Agent, Tool, Conditional, Human)
-- [ ] Implement drag-and-drop node placement
-- [ ] Add edge connection interface
-
-**LangGraph Builder Features:**
-| Feature | Description |
-|---------|-------------|
-| Graph Canvas | Visual canvas for building graphs |
-| Node Palette | Draggable nodes (Agent, Tool, Conditional, Human, End) |
-| Edge Editor | Connect nodes with conditional routing |
-| State Schema | Define state structure for the graph |
-| Checkpoints | Configure checkpoint persistence |
-| Preview | Preview graph execution flow |
-
-#### Day 3-4: Graph Visualization
+#### Day 1-2: Node.js Engine Foundation
 
 **Tasks:**
-- [ ] Integrate graph visualization library (e.g., vis.js, cytoscape.js)
-- [ ] Implement node rendering
-- [ ] Implement edge rendering with labels
-- [ ] Add zoom and pan controls
-- [ ] Add node selection and editing
-- [ ] Add edge selection and editing
+- [ ] Create `services/execution-engine/node/` project structure
+- [ ] Set up Express server (port 3003) with routes
+- [ ] Implement `POST /execute/stream` with SSE response
+- [ ] Implement `GET /executions/:id` and `POST /executions/:id/stop`
+- [ ] Add health check endpoint
 
-**Node Types:**
+#### Day 3-4: MCP Runtime (Server-Side Agentic Loop)
+
+**Tasks:**
+- [ ] Port `ChatService.js` agentic loop to `mcp-runtime.js`
+- [ ] Port `LlmClient.js` to `llm-client.js` (Node.js, using fetch/axios)
+- [ ] Port `McpClient.js` to `mcp-client.js` (server-side MCP calls)
+- [ ] Implement `framework-router.js` — routes "default" to MCP runtime
+- [ ] Implement `log-store.js` — execution log persistence (JSON file initially)
+
+#### Day 5: Frontend Integration
+
+**Tasks:**
+- [ ] Add feature flag `USE_SERVER_EXECUTION` in `Constants.js`
+- [ ] Add SSE EventSource path in `ChatService.js`
+- [ ] Add execution-engine module to `mta.yaml`
+- [ ] Add route in `approuter/xs-app.json`
+- [ ] Test end-to-end: UI → Node.js Engine → LLM → MCP → response
+
+---
+
+### Week 6: LangGraph + MAF Runtimes (Both Engines)
+
+#### Day 1-2: Python FastAPI Engine
+
+**Tasks:**
+- [ ] Create `services/execution-engine/python/` project structure
+- [ ] Set up FastAPI with `POST /execute/stream` endpoint
+- [ ] Implement `langgraph_runtime.py` — build StateGraph from JSON config
+- [ ] Implement `graph_executor.py` — execute graph with SSE streaming
+- [ ] Add health check, Dockerfile, requirements.txt
+- [ ] Add `ai-factory-python-engine` to `mta.yaml`
+
+**Python dependencies:** `langgraph`, `langchain-core`, `autogen-agentchat`, `autogen-ext`, `fastapi`, `uvicorn`
+
+#### Day 3-4: Node.js LangGraph JS + MAF JS Runtimes
+
+**Tasks:**
+- [ ] Implement `langgraph-runtime.js` using `@langchain/langgraph` npm package
+- [ ] Build StateGraph from JSON config (nodes, edges, conditional routing)
+- [ ] Implement `maf-runtime.js` using `autogen-agentchat` JS package
+- [ ] Build agent teams from JSON config (supervisor/worker roles, handoff rules)
+- [ ] Update `framework-router.js` to route "langgraph" and "maf" by runtime preference
+- [ ] Add proxy logic in Node.js engine to forward `runtime: "python"` requests to Python engine
+
+**Framework Router Logic:**
 ```javascript
-const nodeTypes = {
-  agent: {
-    icon: "sap-icon://person-placeholder",
-    color: "#0070f3",
-    inputs: ["message"],
-    outputs: ["response"]
-  },
-  tool: {
-    icon: "sap-icon://wrench",
-    color: "#10b981",
-    inputs: ["input"],
-    outputs: ["result"]
-  },
-  conditional: {
-    icon: "sap-icon://decision",
-    color: "#f59e0b",
-    inputs: ["condition"],
-    outputs: ["true", "false"]
-  },
-  human: {
-    icon: "sap-icon://employee",
-    color: "#8b5cf6",
-    inputs: ["request"],
-    outputs: ["approval", "rejection"]
-  },
-  end: {
-    icon: "sap-icon://stop",
-    color: "#ef4444",
-    inputs: ["final"],
-    outputs: []
+// framework-router.js
+async execute(agentConfig, message, context) {
+  const { framework, runtime = "node" } = agentConfig;
+  
+  if (framework === "default") {
+    return this.runtimes.mcp.execute(agentConfig, message, context);
   }
-};
-```
-
-#### Day 5: State Management Configuration
-
-**Tasks:**
-- [ ] Implement state schema editor
-- [ ] Add state variable definition
-- [ ] Add state initialization
-- [ ] Add state persistence configuration
-
-**State Schema Example:**
-```json
-{
-  "stateSchema": {
-    "messages": {
-      "type": "array",
-      "items": { "type": "object" },
-      "reducer": "append"
-    },
-    "currentAgent": {
-      "type": "string",
-      "default": "supervisor"
-    },
-    "taskComplete": {
-      "type": "boolean",
-      "default": false
-    }
+  
+  if (runtime === "python") {
+    return this.proxyToPython(agentConfig, message, context);
   }
+  
+  return this.runtimes[framework].execute(agentConfig, message, context);
 }
 ```
 
----
+**Node.js dependencies:** `@langchain/langgraph`, `@langchain/core`, `autogen-agentchat`
 
-### Week 6: LangGraph Backend Service
-
-#### Day 1-2: Python FastAPI Service
+#### Day 5: LangGraph Builder UI
 
 **Tasks:**
-- [ ] Create Python FastAPI project
-- [ ] Set up LangGraph dependencies
-- [ ] Implement graph builder from config
-- [ ] Create execution endpoint
-- [ ] Add streaming support
-
-**Service Structure (`services/execution-engine/langgraph/`):**
-```
-langgraph/
-├── app/
-│   ├── main.py
-│   ├── routes/
-│   │   └── execute.py
-│   ├── services/
-│   │   ├── graph_builder.py
-│   │   └── graph_executor.py
-│   ├── models/
-│   │   └── schemas.py
-│   └── utils/
-│       └── streaming.py
-├── tests/
-│   └── test_execute.py
-├── requirements.txt
-└── Dockerfile
-```
-
-#### Day 3-4: Graph Execution
-
-**Tasks:**
-- [ ] Implement graph construction from JSON config
-- [ ] Implement node execution
-- [ ] Implement edge routing
-- [ ] Add conditional routing logic
-- [ ] Add human-in-the-loop support
-
-**Graph Builder (`services/execution-engine/langgraph/app/services/graph_builder.py`):**
-```python
-from langgraph.graph import StateGraph, END
-from typing import Dict, Any
-
-class GraphBuilder:
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        self.graph = StateGraph(self._build_state_schema())
-    
-    def _build_state_schema(self):
-        # Build state schema from config
-        pass
-    
-    def _add_nodes(self):
-        for node in self.config["nodes"]:
-            if node["type"] == "agent":
-                self.graph.add_node(node["id"], self._create_agent_node(node))
-            elif node["type"] == "tool":
-                self.graph.add_node(node["id"], self._create_tool_node(node))
-            elif node["type"] == "conditional":
-                self.graph.add_conditional_edges(
-                    node["id"],
-                    self._create_condition(node),
-                    node["routes"]
-                )
-    
-    def _add_edges(self):
-        for edge in self.config["edges"]:
-            self.graph.add_edge(edge["from"], edge["to"])
-    
-    def build(self):
-        self._add_nodes()
-        self._add_edges()
-        self.graph.set_entry_point(self.config["entryPoint"])
-        return self.graph.compile()
-```
-
-#### Day 5: Streaming Support
-
-**Tasks:**
-- [ ] Implement Server-Sent Events (SSE)
-- [ ] Add token-by-token streaming
-- [ ] Add step-by-step streaming
-- [ ] Add progress events
-
-**Streaming Endpoint:**
-```python
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-import asyncio
-
-@app.post("/execute/stream")
-async def execute_stream(request: ExecuteRequest):
-    async def generate():
-        graph = GraphBuilder(request.agent_config).build()
-        async for event in graph.astream({"messages": [request.message]}):
-            yield f"data: {json.dumps(event)}\n\n"
-    
-    return StreamingResponse(
-        generate(),
-        media_type="text/event-stream"
-    )
-```
+- [ ] Create `view/langgraph/LangGraphBuilder.view.xml`
+- [ ] Implement graph canvas using `cytoscape.js` (CDN, no npm needed)
+- [ ] Add node palette: Agent, Tool, Conditional, Human-in-Loop, End
+- [ ] Implement drag-and-drop node placement and edge connections
+- [ ] Export graph config JSON to agent definition
+- [ ] Add route `langGraphBuilder` to manifest.json and App.view.xml nav
 
 ---
 
-### Week 7: MAF Builder
+### Week 7: RAG Tools + MAF Builder UI + Context Providers
 
-#### Day 1-2: MAF Builder UI
-
-**Tasks:**
-- [ ] Create UI5 application for MAF Builder
-- [ ] Implement agent team configuration
-- [ ] Add handoff rules editor
-- [ ] Add termination conditions
-- [ ] Add memory configuration
-
-**MAF Builder Features:**
-| Feature | Description |
-|---------|-------------|
-| Team Builder | Configure agent teams |
-| Handoff Rules | Define agent handoff conditions |
-| Termination | Set termination conditions |
-| Memory | Configure memory providers |
-| Guardrails | Add safety guardrails |
-
-#### Day 3-4: MAF Configuration
+#### Day 1-2: RAG Service (Python Engine)
 
 **Tasks:**
-- [ ] Implement agent team definition
-- [ ] Implement handoff configuration
-- [ ] Implement termination conditions
-- [ ] Implement memory configuration
-- [ ] Implement guardrails configuration
+- [ ] Implement `rag_service.py` in Python engine — document ingestion + semantic search
+- [ ] Add `POST /rag/ingest` endpoint (upload docs → chunk → embed → store)
+- [ ] Add `POST /rag/query` endpoint (semantic search → return top-K chunks)
+- [ ] Support vector stores: SAP HANA Cloud Vector Engine (prod), ChromaDB (dev)
+- [ ] Support embedding models via SAP AI Core proxy or OpenAI embeddings
+- [ ] Add chunking logic (configurable chunk size + overlap)
 
-**MAF Configuration Schema:**
+**RAG Ingest Request:**
+```json
+POST /rag/ingest
+{
+  "documents": [{ "content": "...", "metadata": { "source": "manual.pdf" } }],
+  "vectorStore": "hana",
+  "embeddingModel": "text-embedding-ada-002",
+  "chunkSize": 512,
+  "chunkOverlap": 50
+}
+```
+
+**Python dependencies:** `chromadb`, `hdbcli`, `langchain-community` (HANA vector integration)
+
+#### Day 3-4: MAF Builder UI + Context Providers
+
+**Tasks:**
+- [ ] Create `view/maf/MafBuilder.view.xml` — agent team builder
+- [ ] Implement team builder: add agents, assign roles (supervisor/worker)
+- [ ] Add handoff rules editor and termination conditions config
+- [ ] Add route `mafBuilder` to manifest.json and App.view.xml nav
+- [ ] Implement `contextProviders[]` support in Execution Engine
+- [ ] Support HTTP context providers: `{ type: "http", url: "...", field: "shift_info" }`
+- [ ] Support RAG context providers: `{ type: "rag", vectorStore: "...", query: "{{user_message}}" }`
+- [ ] Execution Engine injects fetched context into system prompt before LLM call
+
+**MAF Team Configuration:**
 ```json
 {
   "team": {
@@ -852,109 +756,78 @@ async def execute_stream(request: ExecuteRequest):
       }
     ]
   },
-  "termination": {
-    "type": "maxTurns",
-    "value": 10
-  },
-  "memory": {
-    "provider": "mem0",
-    "config": {
-      "userId": "{{userId}}"
-    }
-  },
-  "guardrails": {
-    "inputFilter": true,
-    "outputFilter": true,
-    "contentPolicy": "strict"
-  }
+  "termination": { "type": "maxTurns", "value": 10 }
 }
 ```
 
-#### Day 5: MAF-Specific Features
+#### Day 5: RAG Builder UI
 
 **Tasks:**
-- [ ] Implement handoff visualization
-- [ ] Add team hierarchy view
-- [ ] Add conversation flow preview
-- [ ] Add guardrails testing
+- [ ] Create `view/rag/RagBuilder.view.xml` — document upload, chunking, vector store, test
+- [ ] Implement document upload (PDF, TXT, MD, HTML)
+- [ ] Add chunking preview (show how docs get split)
+- [ ] Add vector store configuration panel (HANA Vector / ChromaDB endpoint)
+- [ ] Add test retrieval: enter query → see matched chunks + relevance scores
+- [ ] Add route `ragBuilder` to manifest.json and App.view.xml nav
 
 ---
 
-### Week 8: Execution Engine Service
+### Week 8: Agent Scheduler + Hooks + Dashboard + Logs
 
-#### Day 1-2: Unified Execution Engine
-
-**Tasks:**
-- [ ] Create unified execution engine service
-- [ ] Implement framework router
-- [ ] Add MCP runtime integration
-- [ ] Add LangGraph runtime integration
-- [ ] Add MAF runtime integration
-
-**Execution Engine Architecture:**
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    EXECUTION ENGINE                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                  Framework Router                     │   │
-│  │                                                       │   │
-│  │   Request → Detect Framework → Route to Runtime      │   │
-│  │                                                       │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                           │                                  │
-│           ┌───────────────┼───────────────┐                 │
-│           ▼               ▼               ▼                 │
-│     ┌──────────┐   ┌──────────┐   ┌──────────┐            │
-│     │   MCP    │   │LangGraph │   │   MAF    │            │
-│     │ Runtime  │   │ Runtime  │   │ Runtime  │            │
-│     │  (JS)    │   │ (Python) │   │ (Python) │            │
-│     └──────────┘   └──────────┘   └──────────┘            │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-#### Day 3-4: Framework Routing
+#### Day 1-2: Agent Scheduler
 
 **Tasks:**
-- [ ] Implement framework detection from agent config
-- [ ] Implement routing logic
-- [ ] Add fallback handling
-- [ ] Add error handling
-- [ ] Add logging
+- [ ] Implement `scheduler/scheduler.js` — cron runner using `node-cron`
+- [ ] Implement `scheduler/schedule-store.js` — CRUD persistence (JSON file → DB later)
+- [ ] Add schedule REST API routes: `GET/POST /api/v1/schedules`, `PUT/DELETE /api/v1/schedules/:id`
+- [ ] Add `GET /api/v1/schedules/:id/runs` — execution history per schedule
+- [ ] Scheduler triggers `POST /execute` internally at cron time
+- [ ] Add notification support (webhook on success/failure)
 
-**Framework Router:**
-```javascript
-class FrameworkRouter {
-  constructor() {
-    this.runtimes = {
-      mcp: new MCPRuntime(),
-      langgraph: new LangGraphRuntime(),
-      maf: new MAFRuntime()
-    };
-  }
-  
-  async execute(agentConfig, message, context) {
-    const framework = agentConfig.framework;
-    const runtime = this.runtimes[framework];
-    
-    if (!runtime) {
-      throw new Error(`Unknown framework: ${framework}`);
-    }
-    
-    return runtime.execute(agentConfig, message, context);
+**Schedule Configuration:**
+```json
+{
+  "id": "daily-production-report",
+  "name": "Daily Production Report",
+  "agentId": "production-agent",
+  "schedule": {
+    "type": "cron",
+    "expression": "0 8 * * 1-5",
+    "timezone": "Europe/Berlin"
+  },
+  "input": { "message": "Generate daily production status report" },
+  "enabled": true,
+  "notifications": {
+    "onSuccess": ["webhook"],
+    "onFailure": ["webhook"]
   }
 }
 ```
 
-#### Day 5: Framework Switching in UI
+#### Day 3-4: Hooks System + Structured Prompts + Tool Registry
 
 **Tasks:**
-- [ ] Add framework selector in Custom UI
-- [ ] Update agent loading to include framework
-- [ ] Test switching between frameworks
-- [ ] Add framework-specific UI hints
+- [ ] Implement lifecycle hooks in Execution Engine: `preExecution`, `postToolCall`, `onError`, `postExecution`
+- [ ] Hook definitions in agent config: `hooks: [{ event: "postToolCall", action: "log" }]`
+- [ ] Built-in hooks: logging, metrics collection, retry on error
+- [ ] Add structured prompt support in Agent Designer: `{ background[], steps[], constraints[], outputFormat[] }`
+- [ ] Execution Engine flattens structured prompt to string before LLM call (backward compatible)
+- [ ] Persist tools in agent-registry backend — agents reference by ID array `tools: ["id1", "id2"]`
+
+#### Day 5: Dashboard + Logs + Scheduler UI
+
+**Tasks:**
+- [ ] Create `view/dashboard/Dashboard.view.xml` — real metrics (replace placeholder)
+- [ ] Show: total executions, avg response time, token usage, tool call frequency, error rate
+- [ ] Show scheduled job status (next run, last run, success/fail)
+- [ ] Create `view/logs/Logs.view.xml` — execution history (replace placeholder)
+- [ ] Show: timestamp, agent, user message, steps, tokens, duration, trigger type
+- [ ] Add filter by agent, date range, status; drill-down to reasoning steps
+- [ ] Create `view/scheduler/Scheduler.view.xml` — schedule management
+- [ ] Show schedule list with status indicators (active/paused/failed)
+- [ ] Add create schedule form: agent picker, cron builder, input message, notifications
+- [ ] Add manual "Run Now" button and execution history per schedule
+- [ ] Add routes `dashboard`, `logs`, `scheduler` to manifest.json and App.view.xml nav
 
 ---
 

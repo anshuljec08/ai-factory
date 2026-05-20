@@ -6,12 +6,32 @@
 
 ## Table of Contents
 
-1. [Learnings from Sapphire](#learnings-from-sapphire)
-2. [Learnings from Other Projects](#learnings-from-other-projects)
-3. [Proposed New Features](#proposed-new-features)
-4. [Proposed New Tool Types](#proposed-new-tool-types)
-5. [Proposed New Interfaces](#proposed-new-interfaces)
-6. [Implementation Priority](#implementation-priority)
+1. [Phase 2 — In Progress](#phase-2--in-progress)
+2. [Learnings from Sapphire](#learnings-from-sapphire)
+3. [Learnings from Other Projects](#learnings-from-other-projects)
+4. [Proposed New Features](#proposed-new-features)
+5. [Proposed New Tool Types](#proposed-new-tool-types)
+6. [Proposed New Interfaces](#proposed-new-interfaces)
+7. [Implementation Priority](#implementation-priority)
+
+---
+
+## Phase 2 — In Progress
+
+The following features from this document are now **actively being built** as part of Phase 2 (Weeks 5-8). See `docs/implementation-plan.md` for details.
+
+| Feature | Phase 2 Week | Status |
+|---------|--------------|--------|
+| **RAG Tools** (vector search, document ingestion, semantic retrieval) | Week 7 | 🟡 Planned |
+| **Agent Scheduler** (cron-based agent execution, schedule management) | Week 8 | 🟡 Planned |
+| **Dual Execution Engine** (Node.js + Python, server-side agentic loop) | Week 5 | 🟡 Planned |
+| **LangGraph Runtime** (JS + Python, StateGraph builder) | Week 6 | 🟡 Planned |
+| **MAF Runtime** (JS + Python, agent teams, handoffs) | Week 6-7 | 🟡 Planned |
+| **Context Providers** (dynamic context injection, HTTP + RAG) | Week 7 | 🟡 Planned |
+| **Lifecycle Hooks** (preExecution, postToolCall, onError, postExecution) | Week 8 | 🟡 Planned |
+| **Dashboard & Logs** (execution metrics, history, reasoning drill-down) | Week 8 | 🟡 Planned |
+
+> **Note:** The "Daemons" feature (background listeners) from Sapphire is partially addressed by the Agent Scheduler. Full event-driven daemon support remains a future feature.
 
 ---
 
@@ -322,7 +342,7 @@ class SpiceProvider:
 |---------|----------|-------------------|---------------------|
 | **Memory** | 100K+ vector entries | MemoryProvider interface | ✅ Ready |
 | **Tools** | 65+ built-in | MCP + custom | Add Tool Maker |
-| **Daemons** | Email, Discord, etc. | Scheduler only | Add DaemonProvider |
+| **Daemons** | Email, Discord, etc. | Agent Scheduler (Phase 2) | Add DaemonProvider (beyond cron) |
 | **Goals** | Hierarchical + journal | ❌ None | Add GoalsProvider |
 | **Contacts** | Privacy-first | ❌ None | Add ContactsProvider |
 | **Self-Mod** | Prompt editing | ❌ None | Add SelfModProvider |

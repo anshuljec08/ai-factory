@@ -10,8 +10,8 @@
     },
     {
       "source": "^(.*)$",
-      "target": "$1",
-      "destination": "ui-app",
+      "target": "/aifactory/$1",
+      "service": "html5-apps-repo-rt",
       "authenticationType": "none"
     }
   ]

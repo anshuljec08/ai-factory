@@ -2,16 +2,15 @@
     controllerName="ai.factory.controller.tools.ToolManager"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
-    xmlns:f="sap.f"
-    xmlns:form="sap.ui.layout.form"
+    xmlns:l="sap.ui.layout"
     xmlns:core="sap.ui.core">
-    
+
     <Page
         id="toolManagerPage"
         title="Tool Manager"
         showNavButton="true"
         navButtonPress="onNavBack">
-        
+
         <customHeader>
             <Bar>
                 <contentLeft>
@@ -19,52 +18,66 @@
                     <Title text="Tool Manager"/>
                 </contentLeft>
                 <contentRight>
-                    <Button 
+                    <Button
                         id="refreshBtn"
-                        icon="sap-icon://refresh" 
-                        press="onRefresh" 
+                        icon="sap-icon://refresh"
+                        press="onRefresh"
                         type="Transparent"
                         tooltip="Refresh Tools"/>
-                    <Button 
-                        id="createToolBtn"
-                        text="Create Tool" 
-                        icon="sap-icon://add"
-                        type="Emphasized"
-                        press="onCreateTool"/>
                 </contentRight>
             </Bar>
         </customHeader>
-        
+
         <content>
             <VBox class="sapUiMediumMargin">
+                <!-- Builder Tiles -->
+                <Panel headerText="Create Tools" class="sapUiSmallMarginBottom">
+                    <l:Grid defaultSpan="XL3 L4 M6 S12">
+                        <GenericTile
+                            header="MCP Builder"
+                            subheader="Connect to MCP servers"
+                            press="onNavigateToBuilder"
+                            class="sapUiTinyMarginBegin sapUiTinyMarginTop">
+                            <customData>
+                                <core:CustomData key="route" value="mcpBuilder"/>
+                            </customData>
+                            <TileContent>
+                                <NumericContent
+                                    icon="sap-icon://wrench"
+                                    withMargin="false"/>
+                            </TileContent>
+                        </GenericTile>
+                    </l:Grid>
+                </Panel>
+
                 <!-- Tool Statistics -->
                 <HBox class="sapUiSmallMarginBottom" justifyContent="SpaceBetween">
                     <HBox>
-                        <ObjectStatus 
-                            title="Total Tools" 
+                        <ObjectStatus
+                            title="Total Tools"
                             text="{tools>/totalCount}"
                             state="Information"
                             class="sapUiSmallMarginEnd"/>
-                        <ObjectStatus 
-                            title="MCP Tools" 
+                        <ObjectStatus
+                            title="MCP"
                             text="{tools>/mcpCount}"
                             state="Success"
                             class="sapUiSmallMarginEnd"/>
-                        <ObjectStatus 
-                            title="API Tools" 
+                        <ObjectStatus
+                            title="API"
                             text="{tools>/apiCount}"
                             state="Warning"
                             class="sapUiSmallMarginEnd"/>
-                        <ObjectStatus 
-                            title="Custom Tools" 
-                            text="{tools>/customCount}"
+                        <ObjectStatus
+                            title="Other"
+                            text="{tools>/otherCount}"
                             state="None"/>
                     </HBox>
                 </HBox>
-                
+
                 <!-- Filter and Search -->
                 <Toolbar class="sapUiSmallMarginBottom">
-                    <SearchField 
+                    <SearchField
                         id="toolSearchField"
                         placeholder="Search tools..."
                         width="300px"
@@ -73,26 +86,17 @@
                     <ToolbarSpacer/>
                     <Select id="typeFilter" selectedKey="{tools>/filterType}" change="onFilterChange">
                         <core:Item key="all" text="All Types"/>
-                        <core:Item key="mcp" text="MCP Tools"/>
-                        <core:Item key="api" text="API Tools"/>
-                        <core:Item key="custom" text="Custom Tools"/>
+                        <core:Item key="mcp" text="MCP"/>
+                        <core:Item key="api" text="API"/>
+                        <core:Item key="custom" text="Custom"/>
                     </Select>
                     <Select id="statusFilter" selectedKey="{tools>/filterStatus}" change="onFilterChange" class="sapUiSmallMarginBegin">
                         <core:Item key="all" text="All Status"/>
                         <core:Item key="enabled" text="Enabled"/>
                         <core:Item key="disabled" text="Disabled"/>
                     </Select>
-                    <Button 
-                        icon="sap-icon://download"
-                        press="onExportTools"
-                        tooltip="Export Tools"
-                        class="sapUiSmallMarginBegin"/>
-                    <Button 
-                        icon="sap-icon://upload"
-                        press="onImportTools"
-                        tooltip="Import Tools"/>
                 </Toolbar>
-                
+
                 <!-- Tools Table -->
                 <Table
                     id="toolsTable"
@@ -101,46 +105,39 @@
                     selectionChange="onToolSelectionChange"
                     growing="true"
                     growingThreshold="25"
-                    noDataText="No tools found. Create a new tool or import from MCP Builder.">
+                    noDataText="No tools registered. Use MCP Builder, API Builder, or other builders to create tools.">
                     <headerToolbar>
                         <Toolbar>
-                            <Title text="Tools ({tools>/filteredCount})"/>
+                            <Title text="Registered Tools ({tools>/filteredCount})"/>
                             <ToolbarSpacer/>
-                            <Button 
-                                text="Delete Selected" 
+                            <Button
+                                text="Delete Selected"
                                 type="Reject"
                                 icon="sap-icon://delete"
                                 press="onDeleteSelected"
                                 enabled="{= ${tools>/selectedCount} > 0 }"/>
-                            <Button 
-                                text="Enable Selected" 
-                                icon="sap-icon://accept"
-                                press="onEnableSelected"
-                                enabled="{= ${tools>/selectedCount} > 0 }"/>
-                            <Button 
-                                text="Disable Selected" 
-                                icon="sap-icon://decline"
-                                press="onDisableSelected"
-                                enabled="{= ${tools>/selectedCount} > 0 }"/>
                         </Toolbar>
                     </headerToolbar>
                     <columns>
-                        <Column width="20%">
-                            <Text text="Tool Name"/>
+                        <Column width="22%">
+                            <Text text="Name"/>
                         </Column>
-                        <Column width="10%">
+                        <Column width="8%">
                             <Text text="Type"/>
                         </Column>
-                        <Column width="35%">
-                            <Text text="Description"/>
+                        <Column width="28%">
+                            <Text text="Endpoint"/>
                         </Column>
                         <Column width="10%">
-                            <Text text="Status"/>
+                            <Text text="Filter"/>
                         </Column>
-                        <Column width="10%">
+                        <Column width="8%">
                             <Text text="Used By"/>
                         </Column>
-                        <Column width="15%">
+                        <Column width="8%">
+                            <Text text="Status"/>
+                        </Column>
+                        <Column width="16%">
                             <Text text="Actions"/>
                         </Column>
                     </columns>
@@ -148,39 +145,37 @@
                         <ColumnListItem>
                             <cells>
                                 <VBox>
-                                    <Text text="{tools>name}" class="sapUiSmallMarginBottom"/>
-                                    <Text text="{tools>id}" class="sapUiTinyMarginTop sapMTextGrey"/>
+                                    <Text text="{tools>name}"/>
+                                    <Label text="{tools>id}" design="Light"/>
                                 </VBox>
-                                <ObjectStatus 
+                                <ObjectStatus
                                     text="{tools>type}"
                                     state="{= ${tools>type} === 'mcp' ? 'Success' : ${tools>type} === 'api' ? 'Warning' : 'Information' }"/>
-                                <Text text="{tools>description}" wrapping="true"/>
-                                <Switch 
+                                <Text text="{tools>config/mcpUrl}" wrapping="false"/>
+                                <ObjectStatus
+                                    text="{= ${tools>functionFilter/mode} === 'all' ? 'All' : (${tools>functionFilter/mode} === 'include' ? 'Include' : 'Exclude') }"
+                                    state="{= ${tools>functionFilter/mode} === 'all' ? 'Success' : 'Warning' }"/>
+                                <ObjectNumber
+                                    number="{tools>usedByCount}"
+                                    unit="agents"/>
+                                <Switch
                                     state="{tools>enabled}"
                                     change="onToolStatusChange"
                                     customTextOn="On"
                                     customTextOff="Off"/>
-                                <ObjectNumber 
-                                    number="{tools>usedByCount}"
-                                    unit="agents"/>
                                 <HBox>
-                                    <Button 
-                                        icon="sap-icon://edit" 
+                                    <Button
+                                        icon="sap-icon://connected"
+                                        type="Transparent"
+                                        press="onTestConnection"
+                                        tooltip="Test Connection"/>
+                                    <Button
+                                        icon="sap-icon://edit"
                                         type="Transparent"
                                         press="onEditTool"
                                         tooltip="Edit Tool"/>
-                                    <Button 
-                                        icon="sap-icon://duplicate" 
-                                        type="Transparent"
-                                        press="onDuplicateTool"
-                                        tooltip="Duplicate Tool"/>
-                                    <Button 
-                                        icon="sap-icon://play" 
-                                        type="Transparent"
-                                        press="onTestTool"
-                                        tooltip="Test Tool"/>
-                                    <Button 
-                                        icon="sap-icon://delete" 
+                                    <Button
+                                        icon="sap-icon://delete"
                                         type="Transparent"
                                         press="onDeleteTool"
                                         tooltip="Delete Tool"/>

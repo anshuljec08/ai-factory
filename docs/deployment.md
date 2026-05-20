@@ -17,7 +17,7 @@
 
 ### Key Principle: Single Deployment, Multiple Agents
 
-**You do NOT need to deploy each agent separately.** Instead, deploy the Execution Engine once, and agents are loaded dynamically from the Agent Registry at runtime.
+**You do NOT need to deploy each agent separately.** Instead, deploy the Dual Execution Engine once (Node.js + Python), and agents are loaded dynamically from the Agent Registry at runtime.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
@@ -25,20 +25,31 @@
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                      │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐    │
-│  │                    EXECUTION ENGINE (Deploy Once)                            │    │
+│  │              NODE.JS ENGINE (port 3003) — Deploy Once                        │    │
 │  │                                                                               │    │
-│  │   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐                       │    │
-│  │   │ LangGraph   │   │ MAF         │   │ MCP         │                       │    │
-│  │   │ Runtime     │   │ Runtime     │   │ Runtime     │                       │    │
-│  │   └─────────────┘   └─────────────┘   └─────────────┘                       │    │
+│  │   ┌──────────┐   ┌──────────────┐   ┌──────────┐   ┌──────────────────┐    │    │
+│  │   │   MCP    │   │ LangGraph JS │   │  MAF JS  │   │ Scheduler +      │    │    │
+│  │   │ Runtime  │   │   Runtime    │   │ Runtime  │   │ Log Store        │    │    │
+│  │   └──────────┘   └──────────────┘   └──────────┘   └──────────────────┘    │    │
 │  │                                                                               │    │
-│  │   Loads agent definitions from Agent Registry at runtime                     │    │
+│  │   Routes by agent.framework + agent.runtime                                  │    │
+│  │   Proxies to Python engine when runtime = "python"                           │    │
+│  └─────────────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                               │
+│                        (proxy when runtime = "python")                               │
+│                                      ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐    │
+│  │              PYTHON ENGINE (port 3004) — Deploy Once                         │    │
 │  │                                                                               │    │
+│  │   ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐                │    │
+│  │   │ LangGraph Py │   │  MAF Python  │   │   RAG Service    │                │    │
+│  │   │   Runtime    │   │   Runtime    │   │ (vector search)  │                │    │
+│  │   └──────────────┘   └──────────────┘   └──────────────────┘                │    │
 │  └─────────────────────────────────────────────────────────────────────────────┘    │
 │                                      ▲                                               │
 │                                      │                                               │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐    │
-│  │                    AGENT REGISTRY (Database)                                 │    │
+│  │                    AGENT REGISTRY (port 3001)                                │    │
 │  │                                                                               │    │
 │  │   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐    │    │
 │  │   │ Production  │   │ HANA        │   │ Sales       │   │ Custom      │    │    │
@@ -46,13 +57,14 @@
 │  │   │ (config)    │   │ (config)    │   │ (config)    │   │ (config)    │    │    │
 │  │   └─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘    │    │
 │  │                                                                               │    │
-│  │   Stores: System prompts, tool configs, model settings, framework type       │    │
+│  │   Stores: System prompts, tool IDs, model settings, framework, runtime       │    │
 │  │                                                                               │    │
 │  └─────────────────────────────────────────────────────────────────────────────┘    │
 │                                                                                      │
-│  ✅ Deploy Execution Engine ONCE                                                    │
+│  ✅ Deploy Dual Engine ONCE (Node.js + Python)                                      │
 │  ✅ Add/modify agents via Agent Designer (no redeployment)                          │
 │  ✅ Change prompts, tools, settings anytime                                         │
+│  ✅ Switch between JS and Python runtimes per agent                                 │
 │                                                                                      │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -61,22 +73,27 @@
 
 | Component | Deployed? | Configurable at Runtime? |
 |-----------|-----------|--------------------------|
-| **Execution Engine** | ✅ Yes (once) | ❌ No |
-| **LangGraph Runtime** | ✅ Yes (part of engine) | ❌ No |
-| **MAF Runtime** | ✅ Yes (part of engine) | ❌ No |
+| **Node.js Engine** | ✅ Yes (once) | ❌ No |
+| **Python Engine** | ✅ Yes (once) | ❌ No |
+| **Scheduler** | ✅ Yes (part of Node engine) | ✅ Schedules are CRUD |
 | **Agent Definitions** | ❌ No | ✅ Yes |
 | **System Prompts** | ❌ No | ✅ Yes |
 | **Tool Configurations** | ❌ No | ✅ Yes |
 | **Model Selection** | ❌ No | ✅ Yes |
 | **Max Steps, Timeouts** | ❌ No | ✅ Yes |
+| **Context Providers** | ❌ No | ✅ Yes (per agent) |
+| **Hooks** | ❌ No | ✅ Yes (per agent) |
 
 ### Framework-Specific Deployment
 
-| Framework | Where Agent Logic Runs | Deployment Required |
-|-----------|------------------------|---------------------|
-| **MCP** | Browser (JavaScript) | ❌ None (UI only) |
-| **LangGraph** | Execution Engine (Python) | ✅ Execution Engine |
-| **MAF** | Execution Engine (Python/.NET) | ✅ Execution Engine |
+| Framework | Node.js Engine (JS) | Python Engine | Deployment |
+|-----------|---------------------|---------------|------------|
+| **MCP (default)** | ✅ MCP Runtime | — | Node.js only |
+| **LangGraph** | ✅ `@langchain/langgraph` | ✅ `langgraph` + `langchain-core` | Both engines |
+| **MAF** | ✅ `autogen-agentchat` JS | ✅ `autogen-agentchat` + `autogen-ext` | Both engines |
+| **RAG** | — | ✅ `chromadb` / HANA Vector | Python only |
+
+**Runtime selection:** Agent config field `runtime: "node"` (default) or `"python"` determines which engine executes.
 
 ### Changing an Agent (No Redeployment)
 
@@ -97,77 +114,86 @@
 
 ## Implementation Phases
 
-### Phase 1: Foundation (Weeks 1-4)
-- [ ] Create project structure
-- [ ] Define shared agent schema (JSON Schema)
-- [ ] Implement Agent Designer (basic CRUD)
-- [ ] Implement MCP Builder (port from AI_Chatbot_Standalone)
-- [ ] Implement Custom UI (port from AI_Chatbot_Standalone)
-- [ ] Create Agent Registry service
-- [ ] Create Fiori Launchpad with tiles
+### Phase 1: Foundation (Weeks 1-4) ✅ Complete
+- [x] Create unified single-app project structure (`apps/ai-factory/`)
+- [x] Define shared agent schema (JSON Schema)
+- [x] Implement Agent Designer (full CRUD, framework/model/tools/guardrails)
+- [x] Implement MCP Builder (connect, discover, test, export, save)
+- [x] Implement Chat UI (agent selection, streaming SSE, reasoning steps)
+- [x] Create Agent Registry service (Express, port 3001)
+- [x] Create Home (Launchpad) with live agent/tool counts
+- [x] Implement Tool Manager (CRUD, search, filter, import/export)
+- [x] Deploy to BTP Cloud Foundry
 
-### Phase 2: Framework Expansion (Weeks 5-8)
-- [ ] Implement LangGraph Builder
-- [ ] Create LangGraph backend service
-- [ ] Implement MAF Builder
-- [ ] Create MAF backend service
-- [ ] Add framework switching in Custom UI
-- [ ] Implement Execution Engine service
+### Phase 2: Dual Execution Engine (Weeks 5-8) 🔄 In Progress
+- [ ] Node.js Execution Engine (port 3003) — MCP runtime, framework router, SSE
+- [ ] Python Engine (port 3004) — LangGraph Python, MAF Python, RAG service
+- [ ] LangGraph JS + MAF JS runtimes in Node.js engine
+- [ ] LangGraph Builder UI (cytoscape.js graph canvas)
+- [ ] MAF Builder UI (team builder, handoff rules)
+- [ ] RAG Builder UI (document upload, chunking, vector store, test)
+- [ ] Context Providers (HTTP + RAG dynamic injection)
+- [ ] Agent Scheduler (cron-based execution, schedule management)
+- [ ] Lifecycle Hooks (preExecution, postToolCall, onError, postExecution)
+- [ ] Dashboard (real metrics) + Logs (execution history)
+- [ ] Tool Registry backend persistence (agents reference by ID)
 
 ### Phase 3: UI Integrations (Weeks 9-12)
-- [ ] Implement Joule Connector
-- [ ] Implement Open WebUI Connector
-- [ ] Create unified API layer
+- [ ] Implement Joule Connector (A2A protocol)
+- [ ] Implement Open WebUI Connector (OpenAI-compatible adapter)
+- [ ] Create unified API Gateway with adapter registry
 - [ ] Add streaming support across all UIs
 
-### Phase 4: Operations (Weeks 13-16)
+### Phase 4: A2A Orchestration (Weeks 13-16)
 - [ ] Implement A2A Flow Designer
 - [ ] Implement A2A Orchestrator service
-- [ ] Implement Scheduler
-- [ ] Implement Dashboard
-- [ ] Implement Logs & Monitor
-- [ ] Implement Metrics Collector service
+- [ ] Multi-agent workflows (LangGraph + CrewAI + MAF)
+- [ ] Metrics Collector service
 
 ### Phase 5: Polish & Deploy (Weeks 17-20)
 - [ ] End-to-end testing
 - [ ] Documentation
-- [ ] BTP deployment
 - [ ] Performance optimization
 - [ ] Security audit
+- [ ] Production hardening (PostgreSQL, Redis)
 
 ---
 
 ## Technology Stack
 
 ### Frontend
-- **UI5/Fiori** - All web applications
-- **SAP Fiori Launchpad** - Application shell
+- **UI5/Fiori** - Single unified application (`apps/ai-factory/`)
+- **sap.tnt.ToolPage** - Application shell with side navigation
+- **cytoscape.js** - Graph visualization (LangGraph Builder)
 
 ### Backend
-- **Node.js** - MCP Builder, Scheduler
-- **Python (FastAPI)** - LangGraph Builder, MAF Builder
-- **Express.js** - API Gateway
+- **Node.js + Express** - Execution Engine gateway (port 3003), Agent Registry (port 3001)
+- **Python + FastAPI** - Python Execution Engine (port 3004), RAG service
+- **node-cron** - Agent Scheduler
 
 ### AI/ML
-- **SAP AI Core** - LLM provider
-- **SAP AI Proxy** - API translation
-- **LangChain/LangGraph** - Python agent framework
-- **Microsoft Agent Framework** - Enterprise agents
+- **SAP AI Core** - LLM provider (via AI Proxy)
+- **@langchain/langgraph** - LangGraph JS runtime
+- **langgraph + langchain-core** - LangGraph Python runtime
+- **autogen-agentchat** - MAF runtime (JS + Python)
+- **chromadb / HANA Vector** - Vector store for RAG
 
 ### Infrastructure
 - **SAP BTP Cloud Foundry** - Primary deployment
-- **Docker** - Containerization
-- **Kubernetes** - Optional orchestration
+- **nodejs_buildpack** - Node.js engine + Agent Registry
+- **python_buildpack** - Python engine
+- **MTA (mta.yaml)** - Multi-target application deployment
 
 ### Data
-- **PostgreSQL** - Agent registry, metrics
-- **Redis** - Caching, job queues
-- **Elasticsearch** - Logs
+- **JSON file store** - Agent registry, schedules (Phase 2 MVP)
+- **SAP HANA Cloud** - Vector Engine for RAG (production)
+- **PostgreSQL** - Future: metrics, execution logs
 
 ### Protocols
-- **MCP** - Model Context Protocol
-- **A2A** - Agent-to-Agent Protocol
-- **OpenAI API** - LLM interface
+- **MCP** - Model Context Protocol (tool execution)
+- **A2A** - Agent-to-Agent Protocol (Phase 3)
+- **OpenAI API** - LLM interface (SAP AI Proxy compatible)
+- **SSE** - Server-Sent Events (execution streaming)
 
 ---
 
@@ -333,63 +359,63 @@
 
 ```
 AI_Factory/
-├── README.md                           # Platform overview
+├── CLAUDE.md                           # Development context & project state
 ├── ARCHITECTURE.md                     # Main architecture (links to docs/)
-├── docker-compose.yml                  # Local development setup
-├── mta.yaml                            # BTP deployment descriptor
+├── IMPROVEMENTS.md                     # Future features & learnings
+├── mta.yaml                            # BTP MTA deployment descriptor
 │
 ├── docs/                               # Detailed documentation
-│   ├── applications.md                 # All 14 applications
-│   ├── services.md                     # Backend services
+│   ├── implementation-plan.md          # 20-week implementation plan
+│   ├── services.md                     # Backend services (dual engine)
 │   ├── deployment.md                   # This file
-│   ├── ui-integration.md               # UI options
-│   ├── a2a-orchestration.md            # A2A architecture
-│   ├── design-principles.md            # Design patterns
+│   ├── phase1-deviations.md            # Active deviations + resolution
+│   ├── ui-integration.md              # UI options (5 UIs)
+│   ├── a2a-orchestration.md            # A2A architecture (Phase 3)
+│   ├── design-principles.md            # Design patterns (Atomic Agents)
 │   ├── scalability.md                  # Plugin architecture
 │   ├── tool-management.md              # Tool types & RAG
-│   ├── protocols-standards.md          # AI protocols
 │   └── interfaces.md                   # Interface definitions
 │
-├── shared/                             # Shared libraries & types
-│   ├── agent-schema/                   # Agent definition schema (JSON Schema)
-│   │   ├── agent.schema.json           # Main agent schema
-│   │   ├── tool.schema.json            # Tool definition schema
-│   │   └── auth.schema.json            # Authentication schema
-│   ├── api-contracts/                  # OpenAPI specs for all services
-│   │   ├── agent-registry.yaml         # Agent registry API
-│   │   ├── execution-engine.yaml       # Execution engine API
-│   │   └── a2a-protocol.yaml           # A2A protocol spec
-│   └── common-utils/                   # Shared utilities
-│       ├── js/                         # JavaScript utilities
-│       └── python/                     # Python utilities
+├── apps/
+│   └── ai-factory/                     # Single unified UI5 app
+│       └── webapp/
+│           ├── Component.js
+│           ├── manifest.json
+│           ├── view/
+│           │   ├── App.view.xml        # Shell with side navigation
+│           │   ├── Home.view.xml       # Launchpad tiles (live stats)
+│           │   ├── agent/              # Agent Designer (full CRUD)
+│           │   ├── mcp/                # MCP Builder
+│           │   ├── chat/               # Chat UI
+│           │   ├── tools/              # Tool Manager
+│           │   ├── langgraph/          # LangGraph Builder (Phase 2)
+│           │   ├── maf/                # MAF Builder (Phase 2)
+│           │   ├── rag/                # RAG Builder (Phase 2)
+│           │   ├── scheduler/          # Scheduler (Phase 2)
+│           │   ├── dashboard/          # Dashboard (Phase 2)
+│           │   └── logs/               # Logs & Monitor (Phase 2)
+│           ├── controller/             # Mirrors view/ structure
+│           ├── service/                # ChatService, LlmClient, McpClient, etc.
+│           └── util/                   # Constants, helpers
 │
-├── apps/                               # All applications
-│   ├── 01-agent-designer/              # 📋 Agent Creation App
-│   ├── 02-mcp-builder/                 # 🔧 MCP Framework Builder
-│   ├── 03-langgraph-builder/           # 🔧 LangGraph Framework Builder
-│   ├── 04-maf-builder/                 # 🔧 MAF Framework Builder
-│   ├── 05-custom-ui/                   # 🖥️ Custom Chat UI (UI5)
-│   ├── 06-joule-connector/             # 🖥️ Joule Integration
-│   ├── 07-openwebui-connector/         # 🖥️ Open WebUI Integration
-│   ├── 08-a2a-designer-langgraph/      # ⚙️ A2A Flow Designer (LangGraph)
-│   ├── 09-a2a-designer-crewai/         # ⚙️ A2A Flow Designer (CrewAI)
-│   ├── 10-a2a-designer-maf/            # ⚙️ A2A Flow Designer (MAF)
-│   ├── 11-scheduler/                   # ⚙️ Agent Scheduler
-│   ├── 12-dashboard/                   # ⚙️ Analytics Dashboard
-│   ├── 13-logs-monitor/                # ⚙️ Logs & Monitoring
-│   └── 14-tool-manager/                # 🔧 Tool Management
+├── services/
+│   ├── agent-registry/                 # REST API (Express, port 3001)
+│   ├── execution-engine/
+│   │   ├── node/                       # Node.js engine (port 3003)
+│   │   │   └── src/
+│   │   │       ├── index.js            # Express gateway
+│   │   │       ├── runtimes/           # mcp, langgraph-js, maf-js
+│   │   │       ├── services/           # framework-router, llm-client, mcp-client
+│   │   │       └── scheduler/          # Cron runner + schedule store
+│   │   └── python/                     # Python engine (port 3004)
+│   │       └── app/
+│   │           ├── main.py             # FastAPI entry point
+│   │           ├── runtimes/           # langgraph_runtime, maf_runtime
+│   │           └── services/           # graph_builder, rag_service
+│   └── mcp-proxy/                      # Dedicated MCP proxy (port 3002)
 │
-├── services/                           # Backend services
-│   ├── agent-registry/                 # Central agent registry service
-│   ├── execution-engine/               # Agent execution service
-│   ├── a2a-orchestrator/               # A2A protocol orchestrator
-│   └── metrics-collector/              # Metrics & logging service
+├── shared/
+│   └── agent-schema/                   # JSON schemas & validators
 │
-├── launchpad/                          # SAP Fiori Launchpad config
-│   ├── webapp/
-│   └── tiles.json                      # Tile definitions
-│
-└── infrastructure/                     # Deployment configs
-    ├── kubernetes/
-    ├── cloud-foundry/
-    └── terraform/
+└── approuter/                          # BTP App Router (auth routing)
+```

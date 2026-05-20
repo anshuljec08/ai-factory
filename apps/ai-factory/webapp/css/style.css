@@ -151,30 +151,62 @@
 /* Welcome Section */
 .chatWelcomeSection {
     flex: 1;
-    padding: 2rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 300px;
+    /* OLD: padding: 2rem; */
+    padding: 40px 24px 24px 24px;
+    /* OLD: background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+    background: linear-gradient(180deg, #6366F1 0%, #7C3AED 50%, #A855F7 100%);
+    min-height: 380px;
 }
 
 .chatJouleIcon {
-    padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 50%;
-    margin-bottom: 1rem;
+    /* OLD: padding: 1.5rem; background: rgba(255, 255, 255, 0.15); border-radius: 50%; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 140px;
+    height: 140px;
+    /* Reduced gaps further */
+    margin-bottom: 0;
+    margin-top: 0;
+    padding-top: 0;
 }
 
+.chatJouleIcon svg {
+    width: 140px;
+    height: 140px;
+    overflow: visible !important;
+}
+
+/* "Hello," text - smaller, lighter */
 .chatWelcomeSection .sapMTitle {
-    color: white !important;
-}
-
-.chatSubtitle {
     color: rgba(255, 255, 255, 0.9) !important;
-    font-size: 1.25rem !important;
+    font-size: 1.15rem !important;
+    font-weight: 400 !important;
 }
 
+/* "How can I help you today?" - larger, bold */
+.chatSubtitle {
+    color: #ffffff !important;
+    font-size: 1.75rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+}
+
+/* Hint text - hidden, replaced by hint card */
 .chatHint {
-    color: rgba(255, 255, 255, 0.7) !important;
-    font-size: 0.875rem !important;
+    display: none !important;
+}
+
+/* Hint Card - cream background */
+.chatHintCard {
+    background: rgba(255, 255, 240, 0.9);
+    border-radius: 16px;
+    padding: 14px 18px;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: #333333;
+    margin-top: 16px;
+    text-align: center;
 }
 
 /* Quick Action Chips */
@@ -242,7 +274,9 @@
     background-color: white;
     color: #32363a;
     border-bottom-left-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    /* Enhanced shadow for more highlight */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border: 1px solid #e8e8e8;
 }
 
 /* Message Text */
@@ -259,7 +293,8 @@
 }
 
 .chatBotText strong {
-    color: #0a6ed1;
+    color: #333333 !important;
+    font-weight: 600 !important;
 }
 
 .chatBotText code {
@@ -270,28 +305,49 @@
     font-size: 0.875em;
 }
 
-/* Chat Tables */
+/* Chat Tables - Enhanced visibility */
+/* Target any table inside chat messages */
+.chatMessagesContainer table,
+.chatBotBubble table,
 .chatTable {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0.5rem 0;
-    font-size: 0.875rem;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 0.5rem 0 !important;
+    font-size: 0.875rem !important;
+    border: 2px solid #a0a0a0 !important;
 }
 
+.chatMessagesContainer table th,
+.chatMessagesContainer table td,
+.chatBotBubble table th,
+.chatBotBubble table td,
 .chatTable th,
 .chatTable td {
-    padding: 0.5rem;
-    border: 1px solid #e5e5e5;
-    text-align: left;
+    padding: 0.625rem 0.75rem !important;
+    border: 1px solid #a0a0a0 !important;
+    text-align: left !important;
 }
 
+.chatMessagesContainer table th,
+.chatBotBubble table th,
 .chatTable th {
-    background-color: #f5f5f5;
-    font-weight: 600;
+    /* SAP Fiori light gray palette */
+    background-color: #f5f5f5 !important;
+    font-weight: 600 !important;
+    color: #32363a !important;
+    border-bottom: 1px solid #c4c4c4 !important;
 }
 
+.chatMessagesContainer table tr:nth-child(even),
+.chatBotBubble table tr:nth-child(even),
 .chatTable tr:nth-child(even) {
-    background-color: #fafafa;
+    background-color: #f5f5f5 !important;
+}
+
+.chatMessagesContainer table tr:hover,
+.chatBotBubble table tr:hover,
+.chatTable tr:hover {
+    background-color: #eef2ff !important;
 }
 
 /* Typing Indicator */
@@ -371,4 +427,43 @@
 
 #chatPage .sapMBar {
     background-color: white !important;
+}
+
+/* Follow-up Question Chips - Joule Style */
+.chatFollowupContainer {
+    padding: 4px 0 8px 0 !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+}
+
+.chatFollowupChip,
+.chatFollowupChip.sapMBtn {
+    margin: 0 !important;
+}
+
+.chatFollowupChip .sapMBtnInner {
+    background: #ffffff !important;
+    border: 1.5px solid #e8e8e8  !important;
+    border-radius: 16px !important;
+    padding: 6px 14px !important;
+    min-height: 28px !important;
+    height: auto !important;
+}
+
+.chatFollowupChip .sapMBtnContent {
+    font-size: 0.8rem !important;
+    color: #32363a !important;
+    font-weight: 500 !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
+    text-align: left !important;
+}
+
+.chatFollowupChip .sapMBtnInner:hover {
+    background: #f4f0ff !important;
+    border-color: #e8e8e8 !important;
+}
+
+.chatFollowupChip .sapMBtnInner:active {
+    background: #e8e0ff !important;
 }

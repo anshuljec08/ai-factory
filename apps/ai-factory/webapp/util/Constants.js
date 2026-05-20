@@ -20,8 +20,11 @@ sap.ui.define([], function () {
         STREAMING_SETTING_KEY: "aifactory_streaming_enabled",
         
         // API URLs - configurable via agent config
+        AGENTS_API_URL: "/api/v1/agents",
+        TOOLS_API_URL: "/api/v1/tools",
         MODELS_URL: "/api/v1/models",
         OPENAI_API_URL: "/api/v1/chat/completions",
+        // MCP Proxy URLs - served by agent-registry service
         MCP_PROXY_URL: "/api/v1/mcp-proxy",
         MCP_BATCH_PROXY_URL: "/api/v1/mcp-proxy-batch",
         

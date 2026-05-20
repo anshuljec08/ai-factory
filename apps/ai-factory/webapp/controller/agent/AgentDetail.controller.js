@@ -2,8 +2,18 @@ sap.ui.define([
     "../BaseController",
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageBox",
-    "sap/m/MessageToast"
-], function (BaseController, JSONModel, MessageBox, MessageToast) {
+    "sap/m/MessageToast",
+    "sap/m/SelectDialog",
+    "sap/m/StandardListItem",
+    "sap/m/Dialog",
+    "sap/m/Button",
+    "sap/m/Select",
+    "sap/m/List",
+    "sap/m/Label",
+    "sap/m/VBox",
+    "sap/ui/core/Item",
+    "ai/factory/util/Constants"
+], function (BaseController, JSONModel, MessageBox, MessageToast, SelectDialog, StandardListItem, Dialog, Button, Select, List, Label, VBox, Item, Constants) {
     "use strict";
 
     var API_BASE_URL = "/api/v1";
@@ -57,10 +67,9 @@ sap.ui.define([
             });
             this.getView().setModel(oViewModel);
 
-            // Store original agent for cancel
             this._oOriginalAgent = null;
+            this._aRegistryTools = [];
 
-            // Attach route matched handler
             var oRouter = this.getRouter();
             oRouter.getRoute("agentDetail").attachPatternMatched(this._onRouteMatched, this);
         },
@@ -114,13 +123,15 @@ sap.ui.define([
                         agent.guardrails = agent.guardrails || { inputFilter: true, outputFilter: true, contentPolicy: "moderate" };
                         agent.metadata = agent.metadata || { createdAt: null, updatedAt: null, createdBy: "", category: "", icon: "sap-icon://robot", tags: [] };
                         agent.tools = agent.tools || [];
+                        agent.toolFilters = agent.toolFilters || {};
                         agent.maxSteps = agent.maxSteps || 30;
                         agent.timeout = agent.timeout || 30000;
                         agent.version = agent.version || "1.0.0";
-                        
+
                         oModel.setProperty("/agent", agent);
                         that._oOriginalAgent = JSON.parse(JSON.stringify(agent));
                         oModel.setProperty("/busy", false);
+                        that._loadRegistryTools();
                     } else {
                         console.error("AgentDetail: Unexpected response format:", data);
                         throw new Error("Invalid response format - no agent data found");
@@ -191,13 +202,13 @@ sap.ui.define([
          */
         onCancel: function () {
             var oModel = this.getView().getModel();
-            
-            // Restore original data
+
             if (this._oOriginalAgent) {
                 oModel.setProperty("/agent", JSON.parse(JSON.stringify(this._oOriginalAgent)));
             }
-            
+
             oModel.setProperty("/editMode", false);
+            this._buildAssignedToolDetails();
         },
 
         /**
@@ -313,39 +324,235 @@ sap.ui.define([
                 });
         },
 
-        /**
-         * Add a new tool
-         */
-        onAddTool: function () {
-            var oModel = this.getView().getModel();
-            var aTools = oModel.getProperty("/agent/tools") || [];
-            
-            // Add a new empty tool
-            aTools.push({
-                name: "new-tool",
-                type: "mcp",
-                description: "New tool",
-                enabled: true,
-                config: {}
-            });
-            
-            oModel.setProperty("/agent/tools", aTools);
+        _loadRegistryTools: function () {
+            var that = this;
+            fetch(Constants.TOOLS_API_URL)
+                .then(function (r) { return r.json(); })
+                .then(function (oData) {
+                    that._aRegistryTools = oData.data || [];
+                    that._buildAssignedToolDetails();
+                })
+                .catch(function () {
+                    that._aRegistryTools = [];
+                });
         },
 
-        /**
-         * Remove a tool
-         */
+        _buildAssignedToolDetails: function () {
+            var oModel = this.getView().getModel();
+            var aToolIds = oModel.getProperty("/agent/tools") || [];
+            var oToolFilters = oModel.getProperty("/agent/toolFilters") || {};
+            var aRegistry = this._aRegistryTools || [];
+
+            var aDetails = aToolIds.map(function (sId) {
+                var oRegistryTool = aRegistry.find(function (t) { return t.id === sId; });
+                var oFilter = oToolFilters[sId];
+                var sFilterMode = "all";
+                if (oFilter && oFilter.include) { sFilterMode = "include"; }
+                else if (oFilter && oFilter.exclude) { sFilterMode = "exclude"; }
+
+                return {
+                    id: sId,
+                    name: oRegistryTool ? oRegistryTool.name : sId,
+                    type: oRegistryTool ? oRegistryTool.type : "unknown",
+                    filterMode: sFilterMode
+                };
+            });
+
+            oModel.setProperty("/assignedToolDetails", aDetails);
+        },
+
+        onAddTool: function () {
+            var that = this;
+            var oModel = this.getView().getModel();
+            var aCurrentTools = oModel.getProperty("/agent/tools") || [];
+            var aRegistry = this._aRegistryTools || [];
+
+            var aAvailable = aRegistry.filter(function (t) {
+                return aCurrentTools.indexOf(t.id) === -1 && t.enabled !== false;
+            });
+
+            var oSelectModel = new JSONModel({ available: aAvailable });
+
+            var oDialog = new SelectDialog({
+                title: "Add Tool from Registry",
+                noDataText: "No more tools available in registry",
+                items: {
+                    path: "/available",
+                    template: new StandardListItem({
+                        title: "{name}",
+                        description: "{id}",
+                        info: "{type}"
+                    })
+                },
+                confirm: function (oEvent) {
+                    var oSelectedItem = oEvent.getParameter("selectedItem");
+                    if (oSelectedItem) {
+                        var sToolId = oSelectedItem.getDescription();
+                        aCurrentTools.push(sToolId);
+                        oModel.setProperty("/agent/tools", aCurrentTools);
+                        that._buildAssignedToolDetails();
+                    }
+                }
+            });
+
+            oDialog.setModel(oSelectModel);
+            oDialog.open();
+        },
+
         onRemoveTool: function (oEvent) {
-            var oButton = oEvent.getSource();
-            var oContext = oButton.getBindingContext();
+            var oContext = oEvent.getSource().getBindingContext();
             var sPath = oContext.getPath();
             var iIndex = parseInt(sPath.split("/").pop(), 10);
-            
+
             var oModel = this.getView().getModel();
-            var aTools = oModel.getProperty("/agent/tools");
-            
+            var aTools = oModel.getProperty("/agent/tools") || [];
+            var sRemovedId = aTools[iIndex];
+
             aTools.splice(iIndex, 1);
             oModel.setProperty("/agent/tools", aTools);
+
+            var oToolFilters = oModel.getProperty("/agent/toolFilters") || {};
+            delete oToolFilters[sRemovedId];
+            oModel.setProperty("/agent/toolFilters", oToolFilters);
+
+            this._buildAssignedToolDetails();
+        },
+
+        onConfigureToolFilter: function (oEvent) {
+            var that = this;
+            var oContext = oEvent.getSource().getBindingContext();
+            var oToolDetail = oContext.getObject();
+            var sToolId = oToolDetail.id;
+
+            var oModel = this.getView().getModel();
+            var oToolFilters = oModel.getProperty("/agent/toolFilters") || {};
+            var oExisting = oToolFilters[sToolId] || {};
+
+            var sCurrentMode = "all";
+            var aCurrentFunctions = [];
+            if (oExisting.include) {
+                sCurrentMode = "include";
+                aCurrentFunctions = oExisting.include;
+            } else if (oExisting.exclude) {
+                sCurrentMode = "exclude";
+                aCurrentFunctions = oExisting.exclude;
+            }
+
+            var oFilterSelect = new Select({
+                selectedKey: sCurrentMode,
+                width: "100%",
+                items: [
+                    new Item({ key: "all", text: "All functions (no filter)" }),
+                    new Item({ key: "include", text: "Include only listed" }),
+                    new Item({ key: "exclude", text: "Exclude listed" })
+                ],
+                change: function () {
+                    var bShowList = oFilterSelect.getSelectedKey() !== "all";
+                    oFunctionListContainer.setVisible(bShowList);
+                    if (bShowList && oFunctionList.getItems().length === 0) {
+                        that._discoverFunctionsForAgent(sToolId, oFunctionList, aCurrentFunctions);
+                    }
+                }
+            });
+
+            var oFunctionList = new List({
+                mode: "MultiSelect",
+                noDataText: "Loading functions...",
+                growing: false
+            });
+
+            var oDiscoverBtn = new Button({
+                text: "Refresh Functions",
+                icon: "sap-icon://refresh",
+                press: function () {
+                    that._discoverFunctionsForAgent(sToolId, oFunctionList, aCurrentFunctions);
+                }
+            });
+
+            var oFunctionListContainer = new VBox({
+                visible: sCurrentMode !== "all",
+                items: [oDiscoverBtn, oFunctionList]
+            }).addStyleClass("sapUiTinyMarginTop");
+
+            // Auto-load functions if filter is active
+            if (sCurrentMode !== "all") {
+                setTimeout(function () {
+                    that._discoverFunctionsForAgent(sToolId, oFunctionList, aCurrentFunctions);
+                }, 300);
+            }
+
+            var oDialog = new Dialog({
+                title: "Function Filter: " + oToolDetail.name,
+                contentWidth: "500px",
+                content: [
+                    new VBox({
+                        items: [
+                            new Label({ text: "Filter Mode" }),
+                            oFilterSelect,
+                            oFunctionListContainer
+                        ]
+                    }).addStyleClass("sapUiSmallMargin")
+                ],
+                beginButton: new Button({
+                    text: "Apply",
+                    type: "Emphasized",
+                    press: function () {
+                        var sMode = oFilterSelect.getSelectedKey();
+                        var oFilters = oModel.getProperty("/agent/toolFilters") || {};
+
+                        if (sMode === "all") {
+                            delete oFilters[sToolId];
+                        } else {
+                            var aFuncs = oFunctionList.getSelectedItems().map(function (oItem) {
+                                return oItem.getTitle();
+                            });
+                            oFilters[sToolId] = {};
+                            oFilters[sToolId][sMode] = aFuncs;
+                        }
+
+                        oModel.setProperty("/agent/toolFilters", oFilters);
+                        that._buildAssignedToolDetails();
+                        oDialog.close();
+                    }
+                }),
+                endButton: new Button({
+                    text: "Cancel",
+                    press: function () { oDialog.close(); }
+                }),
+                afterClose: function () { oDialog.destroy(); }
+            });
+
+            oDialog.open();
+        },
+
+        _discoverFunctionsForAgent: function (sToolId, oFunctionList, aPreSelected) {
+            oFunctionList.setBusy(true);
+            oFunctionList.removeAllItems();
+
+            fetch(Constants.TOOLS_API_URL + "/" + encodeURIComponent(sToolId) + "/functions?raw=true")
+                .then(function (r) { return r.json(); })
+                .then(function (oData) {
+                    oFunctionList.setBusy(false);
+                    var aFunctions = (oData.data && oData.data.functions) || [];
+                    if (aFunctions.length === 0) {
+                        oFunctionList.setNoDataText("No functions found");
+                        return;
+                    }
+                    aFunctions.forEach(function (oFunc) {
+                        var sName = oFunc.name || oFunc;
+                        var sDesc = oFunc.description || "";
+                        var oItem = new StandardListItem({
+                            title: sName,
+                            description: sDesc.substring(0, 80),
+                            selected: aPreSelected.indexOf(sName) !== -1
+                        });
+                        oFunctionList.addItem(oItem);
+                    });
+                })
+                .catch(function (err) {
+                    oFunctionList.setBusy(false);
+                    oFunctionList.setNoDataText("Failed: " + err.message);
+                });
         }
     });
 });

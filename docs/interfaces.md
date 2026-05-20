@@ -1,14 +1,16 @@
 # AI Factory - Interface Definitions
 
 > Complete interface definitions for all pluggable components in AI Factory.
+> Interfaces are defined in **both Python (for the Python engine)** and **JavaScript (for the Node.js engine)**. Both engines follow the same conceptual contract.
 
 ---
 
 ## Table of Contents
 
 1. [Core Interfaces](#core-interfaces)
-2. [Future-Proof Interfaces](#future-proof-interfaces)
-3. [All Registries](#all-registries)
+2. [JavaScript Equivalents (Node.js Engine)](#javascript-equivalents-nodejs-engine)
+3. [Future-Proof Interfaces](#future-proof-interfaces)
+4. [All Registries](#all-registries)
 
 ---
 
@@ -233,9 +235,148 @@ class ToolProvider(ABC):
 
 ---
 
+## JavaScript Equivalents (Node.js Engine)
+
+The Node.js engine (port 3003) implements the same contracts as the Python engine but in JavaScript. These are used by `mcp-runtime.js`, `langgraph-runtime.js`, and `maf-runtime.js`.
+
+### 4. FrameworkRuntime (JavaScript)
+
+```javascript
+// services/execution-engine/node/src/runtimes/base-runtime.js
+
+/**
+ * Base interface for all JS framework runtimes.
+ * Each runtime (MCP, LangGraph JS, MAF JS) implements these methods.
+ */
+class BaseRuntime {
+  /**
+   * Initialize the runtime with configuration.
+   * @param {Object} config - Runtime configuration
+   */
+  async initialize(config) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Execute an agent with streaming SSE events.
+   * @param {Object} agentConfig - Agent definition from registry
+   * @param {string} message - User message
+   * @param {Object} context - Execution context (conversationId, etc.)
+   * @param {Function} emit - SSE event emitter: emit(eventType, data)
+   *   Event types: 'token', 'tool_call', 'tool_result', 'step', 'handoff', 'done', 'error'
+   */
+  async execute(agentConfig, message, context, emit) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Stop a running execution.
+   * @param {string} executionId - Execution to stop
+   */
+  async stop(executionId) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Return what this runtime supports.
+   * @returns {Object} { streaming, toolCalling, humanInLoop, checkpointing, multiAgent }
+   */
+  getCapabilities() {
+    return {
+      streaming: false,
+      toolCalling: false,
+      humanInLoop: false,
+      checkpointing: false,
+      multiAgent: false
+    };
+  }
+}
+
+module.exports = BaseRuntime;
+```
+
+### 5. FrameworkRouter (JavaScript)
+
+```javascript
+// services/execution-engine/node/src/services/framework-router.js
+
+/**
+ * Routes execution requests to the appropriate runtime
+ * based on agent.framework and agent.runtime.
+ */
+class FrameworkRouter {
+  constructor(runtimes, pythonEngineUrl) {
+    this.runtimes = runtimes;  // { mcp: MCPRuntime, langgraph: LangGraphJSRuntime, maf: MAFJSRuntime }
+    this.pythonEngineUrl = pythonEngineUrl;
+  }
+
+  /**
+   * Route and execute an agent request.
+   * @param {Object} agentConfig - Agent definition (includes framework, runtime)
+   * @param {string} message - User message
+   * @param {Object} context - Execution context
+   * @param {Function} emit - SSE event emitter
+   */
+  async execute(agentConfig, message, context, emit) {
+    const { framework = 'default', runtime = 'node' } = agentConfig;
+
+    // MCP always runs in Node.js
+    if (framework === 'default') {
+      return this.runtimes.mcp.execute(agentConfig, message, context, emit);
+    }
+
+    // If runtime is "python", proxy to Python engine
+    if (runtime === 'python') {
+      return this.proxyToPython(agentConfig, message, context, emit);
+    }
+
+    // Default: execute in Node.js
+    const rt = this.runtimes[framework];
+    if (!rt) throw new Error(`Unknown framework: ${framework}`);
+    return rt.execute(agentConfig, message, context, emit);
+  }
+
+  async proxyToPython(agentConfig, message, context, emit) {
+    // Forward request to Python engine and relay SSE events
+    // POST http://<pythonEngineUrl>/execute/stream
+  }
+}
+
+module.exports = FrameworkRouter;
+```
+
+### 6. SSE Event Contract (Both Engines)
+
+Both Node.js and Python engines emit the same SSE event types:
+
+```javascript
+// SSE Event Types (shared contract)
+const EventTypes = {
+  TOKEN:       'token',       // { content: "..." }
+  TOOL_CALL:   'tool_call',   // { name, input, id }
+  TOOL_RESULT: 'tool_result', // { id, result }
+  STEP:        'step',        // { node, state }         (LangGraph graph step)
+  HANDOFF:     'handoff',     // { from, to }            (MAF agent handoff)
+  DONE:        'done',        // { reasoningData }
+  ERROR:       'error'        // { message }
+};
+```
+
+**Mapping to Python interface:**
+
+| Python Interface | JavaScript Equivalent |
+|-----------------|----------------------|
+| `FrameworkRuntime` ABC | `BaseRuntime` class |
+| `RuntimeRegistry.register()` | `FrameworkRouter` constructor with runtime map |
+| `ExecutionEvent` dataclass | SSE `emit(eventType, data)` callback |
+| `ExecutionInput` dataclass | `(agentConfig, message, context)` params |
+| `RuntimeCapabilities` dataclass | `getCapabilities()` return object |
+
+---
+
 ## Future-Proof Interfaces
 
-### 4. LLM Provider Interface
+### 7. LLM Provider Interface
 
 ```python
 # shared/interfaces/llm_provider.py
@@ -296,7 +437,7 @@ class LLMProvider(ABC):
         pass
 ```
 
-### 5. Memory Provider Interface
+### 8. Memory Provider Interface
 
 ```python
 # shared/interfaces/memory_provider.py
@@ -341,7 +482,7 @@ class MemoryProvider(ABC):
         pass
 ```
 
-### 6. Knowledge Graph Provider Interface
+### 9. Knowledge Graph Provider Interface
 
 ```python
 # shared/interfaces/knowledge_graph_provider.py
@@ -391,7 +532,7 @@ class KnowledgeGraphProvider(ABC):
         pass
 ```
 
-### 7. Observability Provider Interface
+### 10. Observability Provider Interface
 
 ```python
 # shared/interfaces/observability_provider.py
@@ -437,7 +578,7 @@ class ObservabilityProvider(ABC):
         pass
 ```
 
-### 8. Guardrails Provider Interface
+### 11. Guardrails Provider Interface
 
 ```python
 # shared/interfaces/guardrails_provider.py
@@ -483,7 +624,7 @@ class GuardrailsProvider(ABC):
         pass
 ```
 
-### 9. Browser Automation Provider Interface
+### 12. Browser Automation Provider Interface
 
 ```python
 # shared/interfaces/browser_provider.py
@@ -565,14 +706,16 @@ from .evaluation_registry import EvaluationRegistry
 
 ## Interface Summary
 
-| Interface | Purpose | Implementations |
-|-----------|---------|-----------------|
-| `FrameworkRuntime` | AI framework runtimes | MCP, LangGraph, MAF, CrewAI |
-| `UIAdapter` | UI adapters | Custom, OpenAI, A2A, Chainlit |
-| `ToolProvider` | Tool protocols | MCP, OpenAPI, LangChain |
-| `LLMProvider` | LLM providers | SAP AI Core, OpenAI, Anthropic |
-| `MemoryProvider` | Long-term memory | Mem0, Zep, Custom |
-| `KnowledgeGraphProvider` | Knowledge graphs | Neo4j, HANA Graph |
-| `ObservabilityProvider` | Tracing/metrics | OpenTelemetry, LangSmith |
-| `GuardrailsProvider` | Safety/validation | Guardrails AI, NeMo |
-| `BrowserProvider` | Browser automation | Playwright, Browser Use |
+| Interface | Purpose | Engine | Implementations |
+|-----------|---------|--------|-----------------|
+| `FrameworkRuntime` (Python) | AI framework runtimes | Python (3004) | LangGraph Py, MAF Py |
+| `BaseRuntime` (JavaScript) | AI framework runtimes | Node.js (3003) | MCP, LangGraph JS, MAF JS |
+| `FrameworkRouter` (JavaScript) | Request routing | Node.js (3003) | Routes by framework + runtime |
+| `UIAdapter` | UI adapters | API Gateway | Custom, OpenAI, A2A, Chainlit |
+| `ToolProvider` | Tool protocols | Both | MCP, OpenAPI, LangChain |
+| `LLMProvider` | LLM providers | Both | SAP AI Core, OpenAI, Anthropic |
+| `MemoryProvider` | Long-term memory | Future | Mem0, Zep, Custom |
+| `KnowledgeGraphProvider` | Knowledge graphs | Future | Neo4j, HANA Graph |
+| `ObservabilityProvider` | Tracing/metrics | Future | OpenTelemetry, LangSmith |
+| `GuardrailsProvider` | Safety/validation | Future | Guardrails AI, NeMo |
+| `BrowserProvider` | Browser automation | Future | Playwright, Browser Use |

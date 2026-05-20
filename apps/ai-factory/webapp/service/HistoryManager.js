@@ -182,6 +182,30 @@ sap.ui.define([
             } catch (e) {
                 console.warn("[Chatbot] Error saving streaming setting:", e);
             }
+        },
+
+        /**
+         * Save selected agent to sessionStorage
+         */
+        saveSelectedAgent: function (sAgentId) {
+            try {
+                sessionStorage.setItem("ai_factory_selected_agent", sAgentId);
+                console.log("[Chatbot] Selected agent saved:", sAgentId);
+            } catch (e) {
+                console.warn("[Chatbot] Error saving selected agent:", e);
+            }
+        },
+
+        /**
+         * Restore selected agent from sessionStorage
+         */
+        restoreSelectedAgent: function () {
+            try {
+                return sessionStorage.getItem("ai_factory_selected_agent");
+            } catch (e) {
+                console.warn("[Chatbot] Error restoring selected agent:", e);
+                return null;
+            }
         }
     };
 

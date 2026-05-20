@@ -15,6 +15,10 @@
       }
     }
   },
+  "sap.cloud": {
+    "public": true,
+    "service": "ai.factory"
+  },
   "sap.ui": {
     "technology": "UI5",
     "icons": {

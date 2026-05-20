@@ -1,0 +1,180 @@
+[
+  {
+    "id": "dmc-mcp",
+    "name": "SAP Digital Manufacturing",
+    "type": "mcp",
+    "description": "Orders, SFCs, production data, non-conformances, OEE, downtimes",
+    "config": {
+      "mcpUrl": "https://sapdme-order-mcp-sleepy-puku-iu.cfapps.eu10-004.hana.ondemand.com/mcp",
+      "authType": "none",
+      "maxResultChars": 40000,
+      "maxRecords": 50
+    },
+    "functionFilter": {
+      "mode": "all"
+    },
+    "enabled": true,
+    "metadata": {
+      "createdAt": "2026-05-20T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z",
+      "tags": [
+        "production",
+        "dmc",
+        "sap"
+      ],
+      "category": "Operations",
+      "icon": "sap-icon://factory"
+    }
+  },
+  {
+    "id": "hana-mcp",
+    "name": "HANA Database",
+    "type": "mcp",
+    "description": "SAP HANA database operations - schemas, tables, indexes, SQL queries",
+    "config": {
+      "mcpUrl": "https://hana-mcp-server-stellar-gecko-ce.cfapps.eu10-004.hana.ondemand.com/mcp",
+      "authType": "none",
+      "maxResultChars": 50000,
+      "maxRecords": 100
+    },
+    "functionFilter": {
+      "mode": "all"
+    },
+    "enabled": true,
+    "metadata": {
+      "createdAt": "2026-05-20T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z",
+      "tags": [
+        "hana",
+        "database",
+        "sql",
+        "sap"
+      ],
+      "category": "Data",
+      "icon": "sap-icon://database"
+    }
+  },
+  {
+    "id": "apm-mcp",
+    "name": "Asset Performance Management",
+    "type": "mcp",
+    "description": "APM alerts, maintenance notifications, technical objects, equipment health",
+    "config": {
+      "mcpUrl": "https://sapdme-order-mcp-sleepy-puku-iu.cfapps.eu10-004.hana.ondemand.com/mcp/asset",
+      "authType": "none",
+      "maxResultChars": 40000,
+      "maxRecords": 50
+    },
+    "functionFilter": {
+      "mode": "all"
+    },
+    "enabled": true,
+    "metadata": {
+      "createdAt": "2026-05-20T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z",
+      "tags": [
+        "reliability",
+        "maintenance",
+        "apm",
+        "assets",
+        "sap"
+      ],
+      "category": "Maintenance",
+      "icon": "sap-icon://wrench"
+    }
+  },
+  {
+    "id": "mrp-mcp",
+    "name": "MRP Planner (S/4HANA)",
+    "type": "mcp",
+    "description": "Sales orders, production orders, shop order scheduling via S/4HANA and DME",
+    "config": {
+      "mcpUrl": "https://sapdme-order-mcp-sleepy-puku-iu.cfapps.eu10-004.hana.ondemand.com/mcp/mrp-planner",
+      "authType": "none",
+      "maxResultChars": 40000,
+      "maxRecords": 50
+    },
+    "functionFilter": {
+      "mode": "all"
+    },
+    "enabled": true,
+    "metadata": {
+      "createdAt": "2026-05-20T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z",
+      "tags": [
+        "mrp",
+        "planning",
+        "sales-orders",
+        "production-orders",
+        "s4hana",
+        "sap"
+      ],
+      "category": "Planning",
+      "icon": "sap-icon://planning-calendar"
+    }
+  },
+  {
+    "id": "mrp-pppi-mcp",
+    "name": "MRP Planner PPPI (Process Industry)",
+    "type": "mcp",
+    "description": "Sales orders, process orders, scheduling for process industries (chemical, pharma)",
+    "config": {
+      "mcpUrl": "https://sapdme-order-mcp-sleepy-puku-iu.cfapps.eu10-004.hana.ondemand.com/mcp/mrp-planner-pppi",
+      "authType": "none",
+      "maxResultChars": 40000,
+      "maxRecords": 50
+    },
+    "functionFilter": {
+      "mode": "all"
+    },
+    "enabled": true,
+    "metadata": {
+      "createdAt": "2026-05-20T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z",
+      "tags": [
+        "mrp",
+        "planning",
+        "process-orders",
+        "pppi",
+        "s4hana",
+        "sap"
+      ],
+      "category": "Planning",
+      "icon": "sap-icon://batch-payments"
+    }
+  },
+  {
+    "id": "dmcagent-mcp",
+    "name": "DMC Production Planning",
+    "type": "mcp",
+    "description": "Production planning optimization - scenarios, KPIs, stock, orders, scheduling",
+    "config": {
+      "mcpUrl": "https://gcoe-ds-demo-demo-dmcagent-srv.cfapps.eu10.hana.ondemand.com/mcp",
+      "authType": "oauth2",
+      "authConfig": {
+        "tokenUrl": "https://gcoe-ds-demo-aws.authentication.eu10.hana.ondemand.com/oauth/token",
+        "clientId": "sb-dmcagent-DEMO!t83572",
+        "clientSecret": "4a3768cb-9bed-4e25-85cf-7f87f96b4fc7$EnRzxibvUKfkRYSCSSjWMoHFMP-vNmGYcKwfolY3ppY="
+      },
+      "maxResultChars": 50000,
+      "maxRecords": 100
+    },
+    "functionFilter": {
+      "mode": "all"
+    },
+    "enabled": true,
+    "metadata": {
+      "createdAt": "2026-05-20T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z",
+      "tags": [
+        "dmc",
+        "production",
+        "planning",
+        "optimization",
+        "demo"
+      ],
+      "category": "Operations",
+      "icon": "sap-icon://lab"
+    }
+  }
+]

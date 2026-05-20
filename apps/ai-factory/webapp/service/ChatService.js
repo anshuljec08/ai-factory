@@ -3,9 +3,10 @@ sap.ui.define([
     "ai/factory/service/AgentManager",
     "ai/factory/service/LlmClient",
     "ai/factory/service/McpClient",
+    "ai/factory/service/ToolRouter",
     "ai/factory/service/ConversationManager",
     "ai/factory/service/ToolSchemaAdapter"
-], function (Constants, AgentManager, LlmClient, McpClient, ConversationManager, ToolSchemaAdapter) {
+], function (Constants, AgentManager, LlmClient, McpClient, ToolRouter, ConversationManager, ToolSchemaAdapter) {
     "use strict";
 
     /**
@@ -88,22 +89,23 @@ sap.ui.define([
         },
 
         /**
-         * Load tools for an agent.
+         * Load tools for an agent via ToolRouter (resolves tool IDs from registry, discovers functions, applies filters).
          * @param {string} sAgentId
+         * @returns {Promise}
          */
         loadTools: function (sAgentId) {
             var that = this;
             var oAgent = AgentManager.getAgentById(sAgentId);
 
-            if (!oAgent || !oAgent.mcpUrl) {
+            if (!oAgent) {
                 this._aTools = [];
-                console.log("[ChatService] Agent has no MCP URL, tools cleared");
-                return;
+                console.log("[ChatService] Agent not found, tools cleared");
+                return Promise.resolve();
             }
 
-            McpClient.loadTools(oAgent).then(function (aTools) {
-                that._aTools = aTools;
-                console.log("[ChatService] Loaded tools for agent:", oAgent.name, "count:", aTools.length);
+            return ToolRouter.loadToolsForAgent(oAgent).then(function (aFunctions) {
+                that._aTools = aFunctions;
+                console.log("[ChatService] Loaded functions for agent:", oAgent.name, "count:", aFunctions.length);
             }).catch(function (sError) {
                 that._aTools = [];
                 console.warn("[ChatService] Failed to load tools for agent:", oAgent.name, sError);
@@ -138,32 +140,27 @@ sap.ui.define([
         },
 
         /**
-         * Call a single MCP tool.
+         * Call a single function, routed to the correct tool/server via ToolRouter.
          * @param {string} sToolName
          * @param {Object} oArgs
          * @param {string} sAgentId
          * @returns {Promise<string>}
          */
         callMCPTool: function (sToolName, oArgs, sAgentId) {
-            var oAgent = AgentManager.getAgentById(sAgentId);
-
-            if (!oAgent || !oAgent.mcpUrl) {
-                return Promise.reject("No MCP URL configured for this agent");
-            }
-
-            return McpClient.callTool(oAgent, sToolName, oArgs);
+            return ToolRouter.callFunction(sToolName, oArgs);
         },
 
         /**
          * Truncate a tool result to fit within limits.
          * @param {string} sResult
          * @param {string} sAgentId
+         * @param {string} [sToolName] - If provided, uses per-tool limits from routing map
          * @returns {string}
          */
-        truncateToolResult: function (sResult, sAgentId) {
-            var oAgent = AgentManager.getAgentById(sAgentId);
-            var iMaxLength = (oAgent && oAgent.maxResultChars) ? oAgent.maxResultChars : 40000;
-            var iMaxRecords = (oAgent && oAgent.maxRecords) ? oAgent.maxRecords : 50;
+        truncateToolResult: function (sResult, sAgentId, sToolName) {
+            var oMcpConfig = sToolName ? ToolRouter.getConfigForFunction(sToolName) : null;
+            var iMaxLength = (oMcpConfig && oMcpConfig.maxResultChars) ? oMcpConfig.maxResultChars : 40000;
+            var iMaxRecords = (oMcpConfig && oMcpConfig.maxRecords) ? oMcpConfig.maxRecords : 50;
 
             if (!sResult || sResult.length <= iMaxLength) {
                 return sResult;
@@ -235,6 +232,7 @@ sap.ui.define([
         },
 
         // ─── Internal: Agentic Loop ──────────────────────────────────────────
+        // DEVIATION: Agentic loop runs client-side; moves to Execution Engine POST /execute (Week 5+) — see docs/phase1-deviations.md
 
         /**
          * Send conversation to LLM.
@@ -274,7 +272,7 @@ sap.ui.define([
                 oCallbacks.onTypingUpdate("Processing... (step " + iIteration + ")");
             }
 
-            // Build request
+            // DEVIATION: Plain string systemPrompt; structured prompt object (background/steps/outputInstructions) comes with Agent Designer (Week 3) — see docs/phase1-deviations.md
             var sSystemPrompt = oAgent ? oAgent.systemPrompt : "You are a helpful AI assistant.";
             var sFullSystemPrompt = Constants.buildSystemPrompt(sSystemPrompt, bFollowupEnabled);
             var aMessages = ConversationManager.buildMessagesForLLM(sFullSystemPrompt);
@@ -282,11 +280,13 @@ sap.ui.define([
             // Convert tools at request time with provider-specific sanitization
             var aToolsForModel = this._getToolsForModel(sModel);
 
+            var iMaxTokens = (oAgent && oAgent.modelConfig && oAgent.modelConfig.maxTokens) || 4096;
+
             var oRequestBody = LlmClient.buildRequestBody({
                 model: sModel,
                 messages: aMessages,
                 tools: aToolsForModel,
-                maxTokens: (oAgent && oAgent.maxTokens) || 4096
+                maxTokens: iMaxTokens
             });
 
             // Send request (streaming or non-streaming)
@@ -356,7 +356,10 @@ sap.ui.define([
         _handleLLMResponse: function (choice, oUsage, sAgentId, sModel, bFollowupEnabled, oCallbacks) {
             var that = this;
 
+            console.log("[ChatService] _handleLLMResponse called with choice:", JSON.stringify(choice, null, 2));
+
             if (!choice) {
+                console.error("[ChatService] No choice in response");
                 if (oCallbacks.onError) oCallbacks.onError("No response received from model.");
                 return;
             }
@@ -429,22 +432,26 @@ sap.ui.define([
 
             var dBatchStartTime = new Date();
 
-            // Try batch execution for multiple tools
-            if (aToolUses.length > 1 && oAgent && oAgent.mcpUrl) {
+            // Check if all functions belong to the same tool/server (required for batching)
+            var aFuncNames = aToolUses.map(function (t) { return t.name; });
+            var bCanBatch = ToolRouter.canBatch(aFuncNames);
+            var oFirstConfig = bCanBatch ? ToolRouter.getBatchConfig(aToolUses[0].name) : null;
+
+            if (bCanBatch && oFirstConfig) {
                 var aJsonRpcRequests = aToolUses.map(function (oTool, idx) {
                     return McpClient.buildToolCallRequest(oTool.name, oTool.input, idx);
                 });
 
                 console.log("[ChatService] Using batch endpoint for " + aToolUses.length + " tools");
 
-                McpClient.callBatchProxy(oAgent, aJsonRpcRequests).then(function (aResponses) {
+                McpClient.callBatchProxy(oFirstConfig, aJsonRpcRequests).then(function (aResponses) {
                     var dBatchEndTime = new Date();
                     console.log("[ChatService] Batch completed in " + (dBatchEndTime - dBatchStartTime) + "ms");
 
                     aToolUses.forEach(function (oTool, idx) {
                         var oResp = aResponses[idx];
                         var oExtracted = McpClient.extractBatchResultText(oResp);
-                        var sTruncatedResult = that.truncateToolResult(oExtracted.text, sAgentId);
+                        var sTruncatedResult = that.truncateToolResult(oExtracted.text, sAgentId, oTool.name);
 
                         ConversationManager.addReasoningStep({
                             type: oExtracted.isError ? "tool_error" : "tool_call",
@@ -462,8 +469,7 @@ sap.ui.define([
                     if (oCallbacks.onTypingUpdate) { oCallbacks.onTypingUpdate("Analyzing results..."); }
                     that._sendToLLM(sAgentId, sModel, bFollowupEnabled, oCallbacks);
                 }).catch(function (sBatchError) {
-                    // Batch failed, fall back to individual calls
-                    ConversationManager.popLast(); // Remove the assistant message
+                    ConversationManager.popLast();
                     ConversationManager.appendAssistant({
                         content: oMessage.content || null,
                         tool_calls: oMessage.tool_calls
@@ -482,13 +488,12 @@ sap.ui.define([
          */
         _executeToolCallsIndividually: function (aToolUses, sAgentId, sModel, bFollowupEnabled, oCallbacks) {
             var that = this;
-            var oAgent = AgentManager.getAgentById(sAgentId);
 
             var aPromises = aToolUses.map(function (oTool) {
                 var dToolStartTime = new Date();
 
-                return McpClient.callTool(oAgent, oTool.name, oTool.input).then(function (sResult) {
-                    var sTruncatedResult = that.truncateToolResult(sResult, sAgentId);
+                return ToolRouter.callFunction(oTool.name, oTool.input).then(function (sResult) {
+                    var sTruncatedResult = that.truncateToolResult(sResult, sAgentId, oTool.name);
 
                     ConversationManager.addReasoningStep({
                         type: "tool_call",

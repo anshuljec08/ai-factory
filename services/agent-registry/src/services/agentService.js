@@ -101,6 +101,7 @@ function applyDefaults(agent) {
       ...agent.guardrails
     },
     tools: [],
+    toolFilters: {},
     metadata: {
       createdAt: now,
       updatedAt: now,

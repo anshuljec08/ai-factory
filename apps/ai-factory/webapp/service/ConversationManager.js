@@ -17,6 +17,7 @@ sap.ui.define([
         _bCompacting: false,
         _bStopRequested: false,
         _iToolIterations: 0,
+        _iGeneration: 0,
 
         // Metrics for current query
         _aReasoningSteps: [],
@@ -64,6 +65,9 @@ sap.ui.define([
          * @param {string} sUserMessage - The user's message
          */
         startQuery: function (sUserMessage) {
+            // Increment generation to invalidate any in-flight compaction
+            this._iGeneration++;
+
             // Reset query-level state
             this._iToolIterations = 0;
             this._bStopRequested = false;
@@ -278,6 +282,7 @@ sap.ui.define([
             }
 
             this._bCompacting = true;
+            var iGenAtStart = this._iGeneration;
             var aOldMessages = this._aHistory.slice(0, this._iQueryStartIndex);
             var aCurrentMessages = this._aHistory.slice(this._iQueryStartIndex);
 
@@ -313,6 +318,11 @@ sap.ui.define([
             console.log("[ConversationManager] Starting background summarization of " + aOldMessages.length + " old messages");
 
             fnSendRequest(oRequestBody).then(function (sSummary) {
+                if (that._iGeneration !== iGenAtStart) {
+                    console.log("[ConversationManager] Compaction result discarded — new query started during summarization");
+                    that._bCompacting = false;
+                    return;
+                }
                 if (sSummary) {
                     that._aHistory = [
                         { role: "user", content: "[Prior conversation summary]" },

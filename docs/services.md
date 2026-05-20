@@ -55,53 +55,172 @@ Central service for managing agent definitions.
 
 ---
 
-## Execution Engine Service
+## Execution Engine Service (Dual Engine)
 
-Runs agents and handles tool calls.
+Runs agents server-side using a dual-engine architecture. Both engines support LangGraph and MAF via their respective JS/Python SDKs.
+
+### Node.js Engine (port 3003) — Gateway + MCP + LangGraph JS + MAF JS
+
+The primary entry point. Routes requests by `agent.framework` and `agent.runtime`.
 
 **Endpoints:**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/execute` | Execute agent with input |
-| `POST` | `/execute/stream` | Execute with streaming |
+| `POST` | `/execute` | Execute agent (blocking) |
+| `POST` | `/execute/stream` | Execute agent (SSE streaming) |
 | `GET` | `/executions/{id}` | Get execution status |
 | `POST` | `/executions/{id}/stop` | Stop execution |
+| `GET` | `/api/v1/schedules` | List schedules |
+| `POST` | `/api/v1/schedules` | Create schedule |
+| `PUT` | `/api/v1/schedules/{id}` | Update schedule |
+| `DELETE` | `/api/v1/schedules/{id}` | Delete schedule |
+| `GET` | `/api/v1/schedules/{id}/runs` | Schedule execution history |
+| `GET` | `/health` | Health check |
 
-**Execute Request:**
+**Runtimes:**
+- `mcp-runtime.js` — MCP agentic loop (ported from ChatService.js)
+- `langgraph-runtime.js` — `@langchain/langgraph` StateGraph builder + executor
+- `maf-runtime.js` — AutoGen JS agent teams
+
+### Python Engine (port 3004) — LangGraph Python + MAF Python + RAG
+
+Called by Node.js engine when `agent.runtime === "python"`. Also hosts RAG service.
+
+**Endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/execute` | Execute LangGraph/MAF agent |
+| `POST` | `/execute/stream` | Execute with SSE streaming |
+| `POST` | `/rag/ingest` | Ingest documents into vector store |
+| `POST` | `/rag/query` | Semantic search query |
+| `GET` | `/health` | Health check |
+
+**Runtimes:**
+- `langgraph_runtime.py` — `langgraph` + `langchain-core` StateGraph
+- `maf_runtime.py` — `autogen-agentchat` + `autogen-ext` teams
+
+### Execute Request
 ```json
-POST /execute
+POST /execute/stream
 {
   "agentId": "production-agent",
   "message": "Show production orders with issues",
-  "stream": true,
-  "context": {
-    "conversationId": "conv-123"
+  "conversationId": "conv-123",
+  "stream": true
+}
+```
+
+### SSE Response Events
+```
+event: token
+data: { "content": "Here are the..." }
+
+event: tool_call
+data: { "name": "get_orders", "input": {...}, "id": "call_123" }
+
+event: tool_result
+data: { "id": "call_123", "result": "..." }
+
+event: step
+data: { "node": "analyzer", "state": {...} }
+
+event: handoff
+data: { "from": "supervisor", "to": "worker1" }
+
+event: done
+data: { "reasoningData": { "steps": 5, "totalTime": "3.2s", "inputTokens": 1500 } }
+```
+
+### Framework Routing Logic
+```
+Request → Node.js Engine (port 3003)
+  ├── framework = "default" → MCP Runtime (always local)
+  ├── framework = "langgraph", runtime = "node" → LangGraph JS Runtime (local)
+  ├── framework = "langgraph", runtime = "python" → proxy to Python :3004
+  ├── framework = "maf", runtime = "node" → MAF JS Runtime (local)
+  └── framework = "maf", runtime = "python" → proxy to Python :3004
+```
+
+### Execution Flow
+```
+1. Frontend sends POST /execute/stream
+           │
+           ▼
+2. Node.js Engine receives request
+           │
+           ▼
+3. Framework Router checks agent.framework + agent.runtime
+           │
+           ├── "default" → MCP Runtime (local agentic loop)
+           ├── "langgraph" + "node" → LangGraph JS Runtime
+           ├── "langgraph" + "python" → proxy to Python Engine
+           ├── "maf" + "node" → MAF JS Runtime
+           └── "maf" + "python" → proxy to Python Engine
+           │
+           ▼
+4. Runtime executes agent, streams SSE events back
+           │
+           ▼
+5. Log Store records execution metrics
+```
+
+---
+
+## Scheduler Service
+
+Embedded in the Node.js Execution Engine. Runs agents on cron schedules.
+
+**Schedule Config:**
+```json
+{
+  "id": "daily-production-report",
+  "name": "Daily Production Report",
+  "agentId": "production-agent",
+  "schedule": {
+    "type": "cron",
+    "expression": "0 8 * * 1-5",
+    "timezone": "Europe/Berlin"
+  },
+  "input": { "message": "Generate daily production status report" },
+  "enabled": true,
+  "notifications": {
+    "onSuccess": ["webhook"],
+    "onFailure": ["webhook"]
   }
 }
 ```
 
-**Execution Flow:**
+---
+
+## RAG Service
+
+Embedded in the Python Engine. Provides document ingestion and semantic search.
+
+**Ingest Request:**
+```json
+POST /rag/ingest
+{
+  "documents": [{ "content": "...", "metadata": { "source": "manual.pdf" } }],
+  "vectorStore": "hana",
+  "embeddingModel": "text-embedding-ada-002",
+  "chunkSize": 512,
+  "chunkOverlap": 50
+}
 ```
-1. User sends message to "Production Agent"
-           │
-           ▼
-2. Execution Engine receives request
-           │
-           ▼
-3. Loads agent config from Registry
-   {
-     "framework": "langgraph",
-     "systemPrompt": "...",
-     "tools": [...]
-   }
-           │
-           ▼
-4. Dynamically creates agent instance
-   with the loaded configuration
-           │
-           ▼
-5. Executes agent and returns response
+
+**Query Request:**
+```json
+POST /rag/query
+{
+  "query": "What is the maintenance procedure for line 2?",
+  "vectorStore": "hana",
+  "topK": 5
+}
 ```
+
+**Vector Store Options:**
+- SAP HANA Cloud Vector Engine (production)
+- ChromaDB (local development)
 
 ---
 
@@ -155,41 +274,44 @@ Collects and stores metrics.
 │                                                                                      │
 │   ┌──────────┐    ┌──────────┐    ┌──────────┐                                     │
 │   │ Custom   │    │ Open     │    │ Joule    │                                     │
-│   │ UI (UI5) │    │ WebUI    │    │          │                                     │
+│   │ UI (UI5) │    │ WebUI    │    │ (future) │                                     │
 │   └────┬─────┘    └────┬─────┘    └────┬─────┘                                     │
 │        │               │               │                                            │
 │        │ /execute      │ /v1/chat/     │ /a2a/invoke                               │
-│        │               │ completions   │                                            │
+│        │ /stream       │ completions   │                                            │
 │        ▼               ▼               ▼                                            │
 │   ┌─────────────────────────────────────────────────────────────────────────────┐  │
-│   │                         API GATEWAY                                          │  │
-│   │                                                                               │  │
-│   │   Routes:                                                                    │  │
-│   │   /execute/*           → Execution Engine                                    │  │
-│   │   /v1/chat/completions → OpenAI Adapter → Execution Engine                   │  │
-│   │   /v1/models           → Agent Registry (list agents as models)             │  │
-│   │   /a2a/*               → A2A Orchestrator                                    │  │
-│   │   /agents/*            → Agent Registry                                      │  │
-│   │                                                                               │  │
+│   │                    APPROUTER / API GATEWAY                                    │  │
+│   │   /execute/*     → Execution Engine (Node.js :3003)                          │  │
+│   │   /api/v1/*      → Agent Registry (:3001)                                    │  │
+│   │   /schedules/*   → Execution Engine (Node.js :3003)                          │  │
 │   └─────────────────────────────────────────────────────────────────────────────┘  │
 │                                      │                                              │
-│                                      ▼                                              │
-│   ┌─────────────────────────────────────────────────────────────────────────────┐  │
-│   │                      EXECUTION ENGINE                                        │  │
-│   │                                                                               │  │
-│   │   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐                       │  │
-│   │   │ MCP Runtime │   │ LangGraph   │   │ MAF Runtime │                       │  │
-│   │   │             │   │ Runtime     │   │             │                       │  │
-│   │   └─────────────┘   └─────────────┘   └─────────────┘                       │  │
-│   │                                                                               │  │
-│   └─────────────────────────────────────────────────────────────────────────────┘  │
+│              ┌───────────────────────┼───────────────────┐                         │
+│              ▼                       ▼                   ▼                         │
+│   ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐              │
+│   │  Agent Registry  │   │ Node.js Engine   │   │ Python Engine    │              │
+│   │  (port 3001)     │   │ (port 3003)      │   │ (port 3004)      │              │
+│   │                  │   │                  │   │                  │              │
+│   │  - Agent CRUD    │   │  - Framework     │   │  - LangGraph Py  │              │
+│   │  - Tool CRUD     │   │    Router        │   │  - MAF Python    │              │
+│   │  - LLM Proxy     │   │  - MCP Runtime   │   │  - RAG Service   │              │
+│   │  - MCP Proxy     │   │  - LangGraph JS  │   │                  │              │
+│   │                  │   │  - MAF JS        │   │                  │              │
+│   │                  │   │  - Scheduler     │   │                  │              │
+│   │                  │   │  - Log Store     │   │                  │              │
+│   └──────────────────┘   └────────┬─────────┘   └──────────────────┘              │
+│                                   │                       ▲                         │
+│                                   │  (proxy when          │                         │
+│                                   │   runtime="python")   │                         │
+│                                   └───────────────────────┘                         │
 │                                      │                                              │
 │                    ┌─────────────────┼─────────────────┐                           │
 │                    ▼                 ▼                 ▼                           │
 │             ┌──────────┐      ┌──────────┐      ┌──────────┐                      │
-│             │ SAP AI   │      │ MCP      │      │ Agent    │                      │
-│             │ Proxy    │      │ Servers  │      │ Registry │                      │
-│             │ (LLMs)   │      │ (Tools)  │      │ (Config) │                      │
+│             │ SAP AI   │      │ MCP      │      │ Vector   │                      │
+│             │ Proxy    │      │ Servers  │      │ Store    │                      │
+│             │ (LLMs)   │      │ (Tools)  │      │ (HANA)   │                      │
 │             └──────────┘      └──────────┘      └──────────┘                      │
 │                                                                                      │
 └─────────────────────────────────────────────────────────────────────────────────────┘
@@ -199,11 +321,14 @@ Collects and stores metrics.
 
 ## Framework-Specific Deployment
 
-| Framework | Where Agent Logic Runs | Deployment Required |
-|-----------|------------------------|---------------------|
-| **MCP** | Browser (JavaScript) | ❌ None (UI only) |
-| **LangGraph** | Execution Engine (Python) | ✅ Execution Engine |
-| **MAF** | Execution Engine (Python/.NET) | ✅ Execution Engine |
+| Framework | Node.js Engine (JS) | Python Engine | Deployment |
+|-----------|---------------------|---------------|------------|
+| **MCP (default)** | ✅ MCP Runtime | — | Node.js only |
+| **LangGraph** | ✅ `@langchain/langgraph` | ✅ `langgraph` + `langchain-core` | Both engines |
+| **MAF** | ✅ `autogen-agentchat` JS | ✅ `autogen-agentchat` + `autogen-ext` | Both engines |
+| **RAG** | — | ✅ `chromadb` / HANA Vector | Python only |
+
+**Runtime selection:** Agent config field `runtime: "node"` (default) or `"python"` determines which engine executes.
 
 ---
 
@@ -211,11 +336,13 @@ Collects and stores metrics.
 
 | Component | Deployed? | Configurable at Runtime? |
 |-----------|-----------|--------------------------|
-| **Execution Engine** | ✅ Yes (once) | ❌ No |
-| **LangGraph Runtime** | ✅ Yes (part of engine) | ❌ No |
-| **MAF Runtime** | ✅ Yes (part of engine) | ❌ No |
+| **Node.js Engine** | ✅ Yes (once) | ❌ No |
+| **Python Engine** | ✅ Yes (once) | ❌ No |
+| **Scheduler** | ✅ Yes (part of Node engine) | ✅ Schedules are CRUD |
 | **Agent Definitions** | ❌ No | ✅ Yes |
 | **System Prompts** | ❌ No | ✅ Yes |
 | **Tool Configurations** | ❌ No | ✅ Yes |
 | **Model Selection** | ❌ No | ✅ Yes |
 | **Max Steps, Timeouts** | ❌ No | ✅ Yes |
+| **Context Providers** | ❌ No | ✅ Yes (per agent) |
+| **Hooks** | ❌ No | ✅ Yes (per agent) |

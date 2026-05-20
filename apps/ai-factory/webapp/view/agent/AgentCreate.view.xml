@@ -67,12 +67,37 @@
                         </Select>
                         
                         <core:Title text="System Prompt"/>
-                        
+
                         <Label text="System Prompt"/>
                         <TextArea value="{/agent/systemPrompt}" rows="8" placeholder="Enter system prompt"/>
-                        
+
                     </form:content>
                 </form:SimpleForm>
+
+                <!-- Tools Section -->
+                <Panel headerText="Tools" class="sapUiSmallMarginTop">
+                    <VBox class="sapUiSmallMargin">
+                        <Toolbar>
+                            <Title text="Assigned Tools ({= ${/agent/tools} ? ${/agent/tools}.length : 0})"/>
+                            <ToolbarSpacer/>
+                            <Button
+                                icon="sap-icon://add"
+                                text="Add Tool"
+                                press="onAddTool"/>
+                        </Toolbar>
+                        <List
+                            id="toolsList"
+                            items="{/assignedToolDetails}"
+                            noDataText="No tools assigned. Add tools from the registry.">
+                            <StandardListItem
+                                title="{name}"
+                                description="{id}"
+                                info="{type}"
+                                type="Active"
+                                press="onRemoveToolFromCreate"/>
+                        </List>
+                    </VBox>
+                </Panel>
             </VBox>
         </content>
         

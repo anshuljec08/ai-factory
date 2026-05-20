@@ -105,21 +105,15 @@
                     <VBox>
                         <!-- Search and Filter -->
                         <Toolbar class="sapUiSmallMarginBottom">
-                            <SearchField 
+                            <SearchField
                                 id="toolSearchField"
-                                placeholder="Search tools..."
+                                placeholder="Search functions..."
                                 width="300px"
                                 search="onSearchTools"
                                 liveChange="onSearchTools"/>
                             <ToolbarSpacer/>
-                            <Button 
-                                text="Add Selected to Agent" 
-                                type="Accept" 
-                                icon="sap-icon://add"
-                                press="onAddSelectedTools"
-                                enabled="{= ${mcp>/selectedTools}.length > 0 }"/>
-                            <Button 
-                                text="Export Tools" 
+                            <Button
+                                text="Export Tools"
                                 icon="sap-icon://download"
                                 press="onExportTools"
                                 enabled="{mcp>/isConnected}"/>
@@ -262,46 +256,42 @@
                     </VBox>
                 </Panel>
                 
-                <!-- Saved MCP Servers Panel -->
-                <Panel headerText="Saved MCP Servers" expandable="true" expanded="false">
-                    <List
-                        id="savedServersList"
-                        items="{mcp>/savedServers}"
-                        noDataText="No saved servers. Connect to a server and save it for quick access.">
-                        <StandardListItem
-                            title="{mcp>name}"
-                            description="{mcp>url}"
-                            icon="sap-icon://it-host"
-                            type="Active"
-                            press="onSelectSavedServer">
-                            <customData>
-                                <core:CustomData key="url" value="{mcp>url}"/>
-                            </customData>
-                        </StandardListItem>
-                    </List>
-                    <Toolbar>
-                        <ToolbarSpacer/>
-                        <Button 
-                            text="Save Current Server" 
-                            icon="sap-icon://save"
-                            press="onSaveServer"
-                            enabled="{mcp>/isConnected}"/>
-                    </Toolbar>
+                <!-- Save to Registry Panel -->
+                <Panel headerText="Save to Tool Registry" expandable="true" expanded="true" visible="{mcp>/isConnected}">
+                    <VBox class="sapUiSmallMargin">
+                        <Label text="Tool Name" required="true"/>
+                        <Input
+                            id="saveToolNameInput"
+                            value="{mcp>/saveName}"
+                            placeholder="e.g. SAP Digital Manufacturing"
+                            width="100%"
+                            class="sapUiSmallMarginBottom"/>
+                        <Label text="Tool ID (auto-generated)"/>
+                        <Input
+                            id="saveToolIdInput"
+                            value="{mcp>/saveId}"
+                            placeholder="auto-generated from name"
+                            width="100%"
+                            class="sapUiSmallMarginBottom"/>
+                        <Label text="Description"/>
+                        <TextArea
+                            id="saveToolDescInput"
+                            value="{mcp>/saveDescription}"
+                            rows="2"
+                            width="100%"
+                            placeholder="Brief description of what this tool provides"
+                            class="sapUiSmallMarginBottom"/>
+                        <HBox class="sapUiSmallMarginTop">
+                            <Button
+                                text="Save to Registry"
+                                type="Emphasized"
+                                icon="sap-icon://save"
+                                press="onSaveToRegistry"/>
+                        </HBox>
+                    </VBox>
                 </Panel>
             </VBox>
         </content>
         
-        <footer>
-            <Bar>
-                <contentRight>
-                    <Button 
-                        text="Add All Tools to Agent" 
-                        type="Accept" 
-                        icon="sap-icon://add-product"
-                        press="onAddAllTools"
-                        enabled="{= ${mcp>/tools}.length > 0 }"/>
-                </contentRight>
-            </Bar>
-        </footer>
     </Page>
 </mvc:View>

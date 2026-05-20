@@ -68,6 +68,8 @@ AI Factory is designed to be **extensible** - easily adding new AI frameworks, U
 
 ## Registry Pattern
 
+> **Dual-Engine Note:** The registry pattern is shown in Python below. The Node.js engine (port 3003) implements the same concept via `framework-router.js` which routes to JS runtime classes. The Python engine (port 3004) uses the formal `RuntimeRegistry` pattern. Both engines follow the same `FrameworkRuntime` contract — see `interfaces.md` for both language variants.
+
 ### RuntimeRegistry
 
 ```python
@@ -283,17 +285,17 @@ AdapterRegistry.register("chainlit", ChainlitAdapter())
 
 ### AI Frameworks
 
-| Framework | Status | Effort to Add |
-|-----------|--------|---------------|
-| MCP | ✅ Supported | - |
-| LangGraph | ✅ Supported | - |
-| MAF (AutoGen) | ✅ Supported | - |
-| CrewAI | ✅ Supported | - |
-| Atomic Agents | 🔜 Planned | ~2 days |
-| Haystack | 🔜 Planned | ~3 days |
-| Semantic Kernel | 🔜 Planned | ~3 days |
-| LlamaIndex | 🔜 Planned | ~2 days |
-| Custom | ✅ Easy | ~1 day |
+| Framework | Status | Engine | Effort to Add |
+|-----------|--------|--------|---------------|
+| MCP (default) | ✅ Phase 2 | Node.js only | - |
+| LangGraph | ✅ Phase 2 | Node.js + Python | - |
+| MAF (AutoGen) | ✅ Phase 2 | Node.js + Python | - |
+| CrewAI | 🔜 Phase 3 | Python | ~3 days |
+| Atomic Agents | 🔜 Planned | Python | ~2 days |
+| Haystack | 🔜 Planned | Python | ~3 days |
+| Semantic Kernel | 🔜 Planned | Node.js / .NET | ~3 days |
+| LlamaIndex | 🔜 Planned | Python | ~2 days |
+| Custom | ✅ Easy | Either engine | ~1 day |
 
 ### UI Frameworks
 
@@ -334,13 +336,13 @@ AdapterRegistry.register("chainlit", ChainlitAdapter())
 
 ```
 shared/
-├── interfaces/                      # Standard interfaces
+├── interfaces/                      # Standard interfaces (Python side)
 │   ├── __init__.py
 │   ├── framework_runtime.py         # FrameworkRuntime interface
 │   ├── ui_adapter.py                # UIAdapter interface
 │   └── tool_provider.py             # ToolProvider interface
 │
-├── registries/                      # Dynamic registries
+├── registries/                      # Dynamic registries (Python side)
 │   ├── __init__.py
 │   ├── runtime_registry.py          # RuntimeRegistry
 │   ├── adapter_registry.py          # AdapterRegistry
@@ -354,16 +356,24 @@ shared/
 
 services/
 ├── execution-engine/
-│   ├── runtimes/                    # Runtime implementations
-│   │   ├── langgraph_runtime.py
-│   │   ├── maf_runtime.py
-│   │   ├── mcp_runtime.py
-│   │   └── crewai_runtime.py
-│   └── ...
+│   ├── node/                        # Node.js engine (port 3003)
+│   │   └── src/
+│   │       ├── runtimes/            # JS runtime implementations
+│   │       │   ├── mcp-runtime.js           # MCP agentic loop
+│   │       │   ├── langgraph-runtime.js     # @langchain/langgraph
+│   │       │   └── maf-runtime.js           # autogen-agentchat JS
+│   │       └── services/
+│   │           └── framework-router.js      # Routes by framework + runtime
+│   │
+│   └── python/                      # Python engine (port 3004)
+│       └── app/
+│           ├── runtimes/            # Python runtime implementations
+│           │   ├── langgraph_runtime.py     # langgraph + langchain-core
+│           │   └── maf_runtime.py           # autogen-agentchat + autogen-ext
+│           └── services/
+│               └── rag_service.py           # Vector search + embeddings
 │
-└── api-gateway/
-    ├── adapters/                    # Adapter implementations
-    │   ├── openai_adapter.py
-    │   ├── a2a_adapter.py
-    │   └── custom_adapter.py
-    └── ...
+└── agent-registry/                  # Agent CRUD + Tool persistence (port 3001)
+```
+
+**Note:** The Node.js engine uses the same conceptual interface pattern as Python but expressed in JavaScript (see `interfaces.md` for both language variants).

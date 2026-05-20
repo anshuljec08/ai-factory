@@ -69,9 +69,10 @@ sap.ui.define([
             };
 
             var iMaxTokens = oParams.maxTokens || 4096;
+            var sModel = oParams.model || "";
 
             // GPT models use max_completion_tokens instead of max_tokens
-            if (oParams.model && oParams.model.startsWith("gpt")) {
+            if (sModel && typeof sModel === "string" && sModel.startsWith("gpt")) {
                 oRequestBody.max_completion_tokens = iMaxTokens;
             } else {
                 oRequestBody.max_tokens = iMaxTokens;

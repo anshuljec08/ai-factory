@@ -7,12 +7,9 @@ sap.ui.define([
 ], function (BaseController, JSONModel, MessageToast, MessageBox, McpClient) {
     "use strict";
 
-    var SAVED_SERVERS_KEY = "aifactory_mcp_servers";
-
     return BaseController.extend("ai.factory.controller.mcp.McpBuilder", {
-        
+
         onInit: function () {
-            // Initialize MCP model
             var oMcpModel = new JSONModel({
                 serverUrl: "",
                 authType: "none",
@@ -29,35 +26,13 @@ sap.ui.define([
                 selectedTool: null,
                 testInput: "{}",
                 testOutput: "",
-                savedServers: this._loadSavedServers()
+                saveName: "",
+                saveId: "",
+                saveDescription: ""
             });
             this.getView().setModel(oMcpModel, "mcp");
-            
-            // Store original tools for filtering
+
             this._aAllTools = [];
-        },
-        
-        /**
-         * Load saved servers from localStorage
-         */
-        _loadSavedServers: function () {
-            try {
-                var sSaved = localStorage.getItem(SAVED_SERVERS_KEY);
-                return sSaved ? JSON.parse(sSaved) : [];
-            } catch (e) {
-                return [];
-            }
-        },
-        
-        /**
-         * Save servers to localStorage
-         */
-        _saveSavedServers: function (aServers) {
-            try {
-                localStorage.setItem(SAVED_SERVERS_KEY, JSON.stringify(aServers));
-            } catch (e) {
-                console.error("Failed to save servers:", e);
-            }
         },
         
         /**
@@ -111,172 +86,20 @@ sap.ui.define([
          * Discover tools from MCP server
          */
         _discoverTools: function (sUrl, sAuthType, oAuthConfig) {
-            var that = this;
-            
-            return new Promise(function (resolve, reject) {
-                // Check if McpClient is available
-                if (McpClient && McpClient.discoverTools) {
-                    McpClient.discoverTools(sUrl, sAuthType, oAuthConfig)
-                        .then(resolve)
-                        .catch(reject);
-                } else {
-                    // Fallback: Try direct fetch to MCP endpoint
-                    that._fetchToolsDirectly(sUrl, sAuthType, oAuthConfig)
-                        .then(resolve)
-                        .catch(reject);
-                }
+            var oMcpConfig = {
+                mcpUrl: sUrl,
+                authType: (sAuthType !== "none") ? "oauth2" : "none",
+                authConfig: oAuthConfig || {},
+                toolTimeout: 30
+            };
+
+            var oToolEntry = { name: "mcp-builder-discovery", config: oMcpConfig };
+
+            return McpClient.loadAllTools([oToolEntry]).then(function (aTools) {
+                return aTools;
             });
         },
         
-        /**
-         * Fetch tools directly from MCP server
-         */
-        _fetchToolsDirectly: function (sUrl, sAuthType, oAuthConfig) {
-            var that = this;
-            
-            return new Promise(function (resolve, reject) {
-                var oHeaders = {
-                    "Content-Type": "application/json"
-                };
-                
-                // Add auth headers
-                if (sAuthType === "basic" && oAuthConfig) {
-                    oHeaders["Authorization"] = "Basic " + btoa(oAuthConfig.username + ":" + oAuthConfig.password);
-                } else if (sAuthType === "bearer" && oAuthConfig) {
-                    oHeaders["Authorization"] = "Bearer " + oAuthConfig.token;
-                } else if (sAuthType === "apikey" && oAuthConfig) {
-                    oHeaders["X-API-Key"] = oAuthConfig.token;
-                }
-                
-                // Try MCP tools/list endpoint
-                var sToolsUrl = sUrl.replace(/\/$/, "") + "/tools/list";
-                
-                fetch(sToolsUrl, {
-                    method: "POST",
-                    headers: oHeaders,
-                    body: JSON.stringify({})
-                })
-                .then(function (response) {
-                    if (!response.ok) {
-                        // Try alternative endpoint
-                        return that._tryAlternativeEndpoint(sUrl, oHeaders);
-                    }
-                    return response.json();
-                })
-                .then(function (data) {
-                    var aTools = data.tools || data.result?.tools || data || [];
-                    resolve(aTools);
-                })
-                .catch(function (error) {
-                    // If direct fetch fails, use simulated tools for demo
-                    console.warn("MCP fetch failed, using simulated tools:", error);
-                    resolve(that._getSimulatedTools());
-                });
-            });
-        },
-        
-        /**
-         * Try alternative MCP endpoint
-         */
-        _tryAlternativeEndpoint: function (sUrl, oHeaders) {
-            var sAltUrl = sUrl.replace(/\/$/, "");
-            
-            return fetch(sAltUrl, {
-                method: "POST",
-                headers: oHeaders,
-                body: JSON.stringify({
-                    jsonrpc: "2.0",
-                    method: "tools/list",
-                    id: 1
-                })
-            }).then(function (response) {
-                return response.json();
-            });
-        },
-        
-        /**
-         * Get simulated tools for demo
-         */
-        _getSimulatedTools: function () {
-            return [
-                {
-                    name: "get-production-orders",
-                    description: "Retrieve production orders from SAP Digital Manufacturing with optional filters for status, date range, and plant.",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            plant: { type: "string", description: "Plant code" },
-                            status: { type: "string", enum: ["CREATED", "RELEASED", "COMPLETED"], description: "Order status" },
-                            fromDate: { type: "string", format: "date", description: "Start date (ISO 8601)" },
-                            toDate: { type: "string", format: "date", description: "End date (ISO 8601)" },
-                            limit: { type: "integer", default: 100, description: "Maximum results" }
-                        }
-                    }
-                },
-                {
-                    name: "get-alerts",
-                    description: "Get production alerts and notifications from the shop floor.",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            severity: { type: "string", enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"], description: "Alert severity" },
-                            acknowledged: { type: "boolean", description: "Filter by acknowledgment status" },
-                            limit: { type: "integer", default: 50, description: "Maximum results" }
-                        }
-                    }
-                },
-                {
-                    name: "get-work-centers",
-                    description: "Retrieve work center information including capacity and availability.",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            plant: { type: "string", description: "Plant code" },
-                            workCenterId: { type: "string", description: "Specific work center ID" }
-                        }
-                    }
-                },
-                {
-                    name: "get-materials",
-                    description: "Query material master data with optional filters.",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            materialNumber: { type: "string", description: "Material number" },
-                            materialType: { type: "string", description: "Material type" },
-                            plant: { type: "string", description: "Plant code" }
-                        }
-                    }
-                },
-                {
-                    name: "create-production-order",
-                    description: "Create a new production order in SAP Digital Manufacturing.",
-                    inputSchema: {
-                        type: "object",
-                        required: ["material", "quantity", "plant"],
-                        properties: {
-                            material: { type: "string", description: "Material number" },
-                            quantity: { type: "number", description: "Order quantity" },
-                            plant: { type: "string", description: "Plant code" },
-                            scheduledStart: { type: "string", format: "date-time", description: "Scheduled start date" }
-                        }
-                    }
-                },
-                {
-                    name: "update-order-status",
-                    description: "Update the status of a production order.",
-                    inputSchema: {
-                        type: "object",
-                        required: ["orderId", "status"],
-                        properties: {
-                            orderId: { type: "string", description: "Production order ID" },
-                            status: { type: "string", enum: ["RELEASED", "STARTED", "COMPLETED", "CANCELLED"], description: "New status" },
-                            comment: { type: "string", description: "Status change comment" }
-                        }
-                    }
-                }
-            ];
-        },
         
         /**
          * Disconnect from MCP server
@@ -423,36 +246,21 @@ sap.ui.define([
         },
         
         /**
-         * Execute tool via MCP
+         * Execute tool via MCP proxy
          */
         _executeTool: function (sToolName, oInput) {
             var oModel = this.getView().getModel("mcp");
             var sUrl = oModel.getProperty("/serverUrl");
-            
-            return new Promise(function (resolve, reject) {
-                // Check if McpClient is available
-                if (McpClient && McpClient.callTool) {
-                    McpClient.callTool(sUrl, sToolName, oInput)
-                        .then(resolve)
-                        .catch(reject);
-                } else {
-                    // Simulated response
-                    setTimeout(function () {
-                        resolve({
-                            success: true,
-                            tool: sToolName,
-                            input: oInput,
-                            result: {
-                                message: "Tool executed successfully (simulated)",
-                                data: [
-                                    { id: "001", name: "Sample Result 1" },
-                                    { id: "002", name: "Sample Result 2" }
-                                ]
-                            }
-                        });
-                    }, 1000);
-                }
-            });
+            var sAuthType = oModel.getProperty("/authType");
+
+            var oMcpConfig = {
+                mcpUrl: sUrl,
+                authType: (sAuthType !== "none") ? "oauth2" : "none",
+                authConfig: {},
+                toolTimeout: 30
+            };
+
+            return McpClient.callTool(oMcpConfig, sToolName, oInput);
         },
         
         /**
@@ -465,76 +273,62 @@ sap.ui.define([
         },
         
         /**
-         * Add selected tools to agent
+         * Save current MCP server to Tool Registry via API.
          */
-        onAddSelectedTools: function () {
+        onSaveToRegistry: function () {
             var oModel = this.getView().getModel("mcp");
-            var aSelectedTools = oModel.getProperty("/selectedTools");
-            
-            if (aSelectedTools.length === 0) {
-                MessageToast.show("No tools selected");
+            var sUrl = oModel.getProperty("/serverUrl");
+            var sAuthType = oModel.getProperty("/authType");
+            var sName = oModel.getProperty("/saveName");
+            var sId = oModel.getProperty("/saveId");
+            var sDescription = oModel.getProperty("/saveDescription");
+
+            if (!sName) {
+                MessageToast.show("Please enter a tool name");
                 return;
             }
-            
-            // Store tools for agent creation
-            this._showAddToAgentDialog(aSelectedTools);
-        },
-        
-        /**
-         * Add all tools to agent
-         */
-        onAddAllTools: function () {
-            var oModel = this.getView().getModel("mcp");
-            var aTools = oModel.getProperty("/tools");
-            
-            if (aTools.length === 0) {
-                MessageToast.show("No tools available");
-                return;
+
+            if (!sId) {
+                sId = sName.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
             }
-            
-            this._showAddToAgentDialog(aTools);
-        },
-        
-        /**
-         * Show add to agent dialog
-         */
-        _showAddToAgentDialog: function (aTools) {
-            var that = this;
-            var oModel = this.getView().getModel("mcp");
-            var sServerUrl = oModel.getProperty("/serverUrl");
-            
-            // Format tools for agent schema
-            var aFormattedTools = aTools.map(function (oTool) {
-                return {
-                    name: oTool.name,
-                    type: "mcp",
-                    description: oTool.description,
-                    enabled: true,
-                    config: {
-                        mcpUrl: sServerUrl,
-                        inputSchema: oTool.inputSchema
-                    }
-                };
-            });
-            
-            MessageBox.confirm(
-                "Add " + aTools.length + " tools to an agent?\n\nTools will be configured with MCP URL: " + sServerUrl,
-                {
-                    title: "Add Tools to Agent",
-                    actions: [MessageBox.Action.OK, MessageBox.Action.CANCEL],
-                    onClose: function (sAction) {
-                        if (sAction === MessageBox.Action.OK) {
-                            // Store tools in session storage for agent creation
-                            sessionStorage.setItem("aifactory_pending_tools", JSON.stringify(aFormattedTools));
-                            
-                            MessageToast.show(aTools.length + " tools ready to add. Navigate to Agent Designer to create/edit an agent.");
-                            
-                            // Navigate to agent list
-                            that.getOwnerComponent().getRouter().navTo("agentList");
-                        }
-                    }
+
+            var oToolData = {
+                id: sId,
+                name: sName,
+                type: "mcp",
+                description: sDescription || "",
+                config: {
+                    mcpUrl: sUrl,
+                    authType: sAuthType !== "none" ? sAuthType : "none",
+                    authConfig: sAuthType !== "none" ? oModel.getProperty("/authConfig") : undefined
+                },
+                functionFilter: { mode: "all" },
+                enabled: true,
+                metadata: {
+                    tags: [],
+                    category: "General"
                 }
-            );
+            };
+
+            jQuery.ajax({
+                url: "/api/v1/tools",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(oToolData),
+                success: function () {
+                    MessageToast.show("Tool '" + sName + "' saved to registry");
+                    oModel.setProperty("/saveName", "");
+                    oModel.setProperty("/saveId", "");
+                    oModel.setProperty("/saveDescription", "");
+                },
+                error: function (jqXHR) {
+                    var sMsg = "Failed to save tool";
+                    if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+                        sMsg = jqXHR.responseJSON.error.message || sMsg;
+                    }
+                    MessageBox.error(sMsg);
+                }
+            });
         },
         
         /**
@@ -564,56 +358,6 @@ sap.ui.define([
             MessageToast.show("Tools exported successfully");
         },
         
-        /**
-         * Save current server
-         */
-        onSaveServer: function () {
-            var that = this;
-            var oModel = this.getView().getModel("mcp");
-            var sUrl = oModel.getProperty("/serverUrl");
-            
-            if (!sUrl) {
-                MessageToast.show("No server connected");
-                return;
-            }
-            
-            // Prompt for name
-            var sName = prompt("Enter a name for this server:", sUrl.split("/").pop() || "MCP Server");
-            if (!sName) return;
-            
-            var aSavedServers = oModel.getProperty("/savedServers");
-            
-            // Check if already exists
-            var bExists = aSavedServers.some(function (s) { return s.url === sUrl; });
-            if (bExists) {
-                MessageToast.show("Server already saved");
-                return;
-            }
-            
-            aSavedServers.push({
-                name: sName,
-                url: sUrl,
-                authType: oModel.getProperty("/authType"),
-                savedAt: new Date().toISOString()
-            });
-            
-            oModel.setProperty("/savedServers", aSavedServers);
-            this._saveSavedServers(aSavedServers);
-            
-            MessageToast.show("Server saved");
-        },
-        
-        /**
-         * Select saved server
-         */
-        onSelectSavedServer: function (oEvent) {
-            var oItem = oEvent.getSource();
-            var sUrl = oItem.data("url");
-            var oModel = this.getView().getModel("mcp");
-            
-            oModel.setProperty("/serverUrl", sUrl);
-            MessageToast.show("Server URL loaded. Click Connect to discover tools.");
-        },
         
         /**
          * Format JSON for display

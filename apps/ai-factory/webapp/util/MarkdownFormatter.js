@@ -12,6 +12,10 @@ sap.ui.define([], function () {
             sHtml = sHtml.replace(/&/g, "&amp;");
             sHtml = sHtml.replace(/</g, "&lt;");
             sHtml = sHtml.replace(/>/g, "&gt;");
+            
+            // CRITICAL: Escape curly braces to prevent UI5 binding interpretation
+            sHtml = sHtml.replace(/\{/g, "&#123;");
+            sHtml = sHtml.replace(/\}/g, "&#125;");
 
             // Convert markdown tables to HTML tables
             sHtml = MarkdownFormatter._convertTables(sHtml);

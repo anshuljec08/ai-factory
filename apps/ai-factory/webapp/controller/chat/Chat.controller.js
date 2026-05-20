@@ -13,8 +13,9 @@
     "ai/factory/util/Constants",
     "ai/factory/util/MarkdownFormatter",
     "ai/factory/service/ChatService",
-    "ai/factory/service/HistoryManager"
-], function (BaseController, JSONModel, HBox, VBox, Text, Button, HTML, Icon, Item, MessageToast, MessageBox, Constants, Markdown, ChatSvc, HistoryMgr) {
+    "ai/factory/service/HistoryManager",
+    "ai/factory/service/AgentManager"
+], function (BaseController, JSONModel, HBox, VBox, Text, Button, HTML, Icon, Item, MessageToast, MessageBox, Constants, Markdown, ChatSvc, HistoryMgr, AgentManager) {
     "use strict";
 
     return BaseController.extend("ai.factory.controller.chat.Chat", {
@@ -56,93 +57,63 @@
         },
         
         /**
-         * Load agents from Agent Registry API
+         * Load agents via AgentManager (single API call serves both dropdown and services)
          */
         _loadAgents: function () {
             var that = this;
             var oAgentSelect = this.byId("agentSelect");
-            
-            fetch(this._sApiUrl + "/agents")
-                .then(function (response) {
-                    if (!response.ok) {
-                        throw new Error("Failed to load agents");
+
+            AgentManager.loadAgentsConfig(function () {
+                var aAgents = AgentManager.getAgents();
+
+                if (oAgentSelect) {
+                    oAgentSelect.removeAllItems();
+                    oAgentSelect.addItem(new Item({ key: "", text: "Select an agent..." }));
+
+                    aAgents.forEach(function (oAgent) {
+                        oAgentSelect.addItem(new Item({
+                            key: oAgent.id,
+                            text: oAgent.name
+                        }));
+                    });
+
+                    var sSavedAgent = HistoryMgr.restoreSelectedAgent ? HistoryMgr.restoreSelectedAgent() : null;
+                    if (sSavedAgent && aAgents.find(function (a) { return a.id === sSavedAgent; })) {
+                        oAgentSelect.setSelectedKey(sSavedAgent);
+                        that._sSelectedAgent = sSavedAgent;
+                        that._loadAgentConfig(sSavedAgent);
+                    } else if (aAgents.length > 0) {
+                        oAgentSelect.setSelectedKey(aAgents[0].id);
+                        that._sSelectedAgent = aAgents[0].id;
+                        that._loadAgentConfig(aAgents[0].id);
                     }
-                    return response.json();
-                })
-                .then(function (oData) {
-                    var aAgents = oData.data || oData || [];
-                    
-                    if (oAgentSelect) {
-                        oAgentSelect.removeAllItems();
-                        oAgentSelect.addItem(new Item({ key: "", text: "Select an agent..." }));
-                        
-                        aAgents.forEach(function (oAgent) {
-                            oAgentSelect.addItem(new Item({
-                                key: oAgent.id,
-                                text: oAgent.name
-                            }));
-                        });
-                        
-                        // Restore selected agent or select first
-                        var sSavedAgent = HistoryMgr.restoreSelectedAgent ? HistoryMgr.restoreSelectedAgent() : null;
-                        if (sSavedAgent && aAgents.find(function(a) { return a.id === sSavedAgent; })) {
-                            oAgentSelect.setSelectedKey(sSavedAgent);
-                            that._sSelectedAgent = sSavedAgent;
-                            that._loadAgentConfig(sSavedAgent);
-                        } else if (aAgents.length > 0) {
-                            oAgentSelect.setSelectedKey(aAgents[0].id);
-                            that._sSelectedAgent = aAgents[0].id;
-                            that._loadAgentConfig(aAgents[0].id);
-                        }
-                    }
-                })
-                .catch(function (error) {
-                    console.error("Error loading agents:", error);
-                    MessageToast.show("Failed to load agents");
-                });
+                }
+            });
         },
         
         /**
          * Load agent configuration and initialize tools
          */
         _loadAgentConfig: function (sAgentId) {
-            var that = this;
-            
-            fetch(this._sApiUrl + "/agents/" + sAgentId)
-                .then(function (response) {
-                    if (!response.ok) {
-                        throw new Error("Failed to load agent config");
-                    }
-                    return response.json();
-                })
-                .then(function (oAgent) {
-                    that._oCurrentAgent = oAgent;
-                    that._sSelectedModel = oAgent.model || Constants.DEFAULT_MODEL;
-                    
-                    console.log("[Chat] Loaded agent config:", oAgent.name);
-                    console.log("[Chat] Model:", that._sSelectedModel);
-                    console.log("[Chat] System Prompt:", oAgent.systemPrompt ? oAgent.systemPrompt.substring(0, 100) + "..." : "None");
-                    
-                    // Initialize ChatService with agent config
-                    ChatSvc.setAgentConfig(oAgent);
-                    
-                    // Load tools if MCP URL is configured
-                    if (oAgent.mcpUrl) {
-                        console.log("[Chat] Loading tools from MCP:", oAgent.mcpUrl);
-                        ChatSvc.loadToolsFromMcp(oAgent.mcpUrl, oAgent.authType, oAgent.authConfig);
-                    } else if (oAgent.tools && oAgent.tools.length > 0) {
-                        console.log("[Chat] Using configured tools:", oAgent.tools.length);
-                    }
-                    
-                    // Save selected agent
-                    if (HistoryMgr.saveSelectedAgent) {
-                        HistoryMgr.saveSelectedAgent(sAgentId);
-                    }
-                })
-                .catch(function (error) {
-                    console.error("Error loading agent config:", error);
-                    MessageToast.show("Failed to load agent configuration");
-                });
+            var oAgent = AgentManager.getAgentById(sAgentId);
+            if (!oAgent) {
+                console.warn("[Chat] Agent not found:", sAgentId);
+                return;
+            }
+
+            this._oCurrentAgent = oAgent;
+            this._sSelectedModel = oAgent.model || Constants.DEFAULT_MODEL;
+
+            console.log("[Chat] Loaded agent config:", oAgent.name);
+            console.log("[Chat] Model:", this._sSelectedModel);
+
+            // Load tools from agent's tools[] array via ChatService
+            ChatSvc.loadTools(sAgentId);
+
+            // Save selected agent
+            if (HistoryMgr.saveSelectedAgent) {
+                HistoryMgr.saveSelectedAgent(sAgentId);
+            }
         },
         
         /**

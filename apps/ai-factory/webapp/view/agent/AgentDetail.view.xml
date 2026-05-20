@@ -299,7 +299,7 @@
                     <uxap:ObjectPageSubSection>
                         <VBox class="sapUiSmallMargin">
                             <Toolbar>
-                                <Title text="Configured Tools ({= ${/agent/tools} ? ${/agent/tools}.length : 0})"/>
+                                <Title text="Assigned Tools ({= ${/agent/tools} ? ${/agent/tools}.length : 0})"/>
                                 <ToolbarSpacer/>
                                 <Button
                                     icon="sap-icon://add"
@@ -308,27 +308,31 @@
                                     visible="{/editMode}"/>
                             </Toolbar>
                             <List
-                                items="{/agent/tools}"
-                                noDataText="No tools configured">
+                                id="toolsList"
+                                items="{/assignedToolDetails}"
+                                noDataText="No tools assigned. Add tools from the registry.">
                                 <CustomListItem>
                                     <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
                                         <HBox alignItems="Center">
                                             <core:Icon
-                                                src="{= ${type} === 'mcp' ? 'sap-icon://connected' : ${type} === 'rag' ? 'sap-icon://database' : ${type} === 'api' ? 'sap-icon://world' : 'sap-icon://wrench'}"
+                                                src="{= ${type} === 'mcp' ? 'sap-icon://connected' : ${type} === 'api' ? 'sap-icon://world' : 'sap-icon://wrench'}"
                                                 class="sapUiSmallMarginEnd"/>
                                             <VBox>
-                                                <Text text="{name}" class="sapMTextBold"/>
-                                                <Text text="{description}"/>
+                                                <Text text="{name}"/>
+                                                <Label text="{id}" design="Light"/>
                                             </VBox>
                                         </HBox>
-                                        <HBox>
+                                        <HBox alignItems="Center">
                                             <ObjectStatus
-                                                text="{type}"
-                                                state="Information"
+                                                text="{= ${filterMode} === 'all' ? 'All functions' : ${filterMode} }"
+                                                state="{= ${filterMode} === 'all' ? 'Success' : 'Warning' }"
                                                 class="sapUiSmallMarginEnd"/>
-                                            <Switch
-                                                state="{enabled}"
-                                                enabled="{/editMode}"/>
+                                            <Button
+                                                icon="sap-icon://filter"
+                                                type="Transparent"
+                                                press="onConfigureToolFilter"
+                                                tooltip="Configure function filter"
+                                                visible="{/editMode}"/>
                                             <Button
                                                 icon="sap-icon://delete"
                                                 type="Transparent"

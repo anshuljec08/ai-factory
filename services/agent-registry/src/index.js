@@ -1,7 +1,9 @@
 /**
  * AI Factory - Agent Registry Service
- * REST API for managing AI agents
+ * REST API for managing AI agents + API gateway for LLM and MCP proxy
  */
+
+require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
@@ -10,6 +12,8 @@ const morgan = require('morgan');
 
 const agentRoutes = require('./routes/agents');
 const toolRoutes = require('./routes/tools');
+const llmProxy = require('./routes/llm-proxy');
+const mcpProxy = require('./routes/mcp-proxy');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -33,6 +37,8 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/v1/agents', agentRoutes);
 app.use('/api/v1/tools', toolRoutes);
+app.use('/api/v1', llmProxy);
+app.use('/api/v1', mcpProxy);
 
 // API Info
 app.get('/api/v1', (req, res) => {
@@ -84,6 +90,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
+  const proxyTarget = process.env.SAP_AI_PROXY_URL || '(not configured)';
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║           AI Factory - Agent Registry Service              ║
@@ -92,6 +99,8 @@ app.listen(PORT, () => {
 ║  Port:      ${PORT}                                            ║
 ║  API:       http://localhost:${PORT}/api/v1                    ║
 ║  Health:    http://localhost:${PORT}/health                    ║
+║  LLM Proxy: ${proxyTarget}
+║  MCP Proxy: dynamic (from request body)                    ║
 ╚═══════════════════════════════════════════════════════════╝
   `);
 });
